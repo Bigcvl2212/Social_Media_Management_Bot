@@ -12,7 +12,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="h-screen flex bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen flex">
       {/* Sidebar */}
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
       
@@ -21,8 +21,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <Header setSidebarOpen={setSidebarOpen} />
         
         <main className="flex-1 overflow-y-auto">
-          <div className="p-6">
-            {children}
+          <div className="p-6 lg:p-8 xl:p-10">
+            <div className="animate-fade-in-scale">
+              {children}
+            </div>
           </div>
         </main>
       </div>

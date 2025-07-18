@@ -48,7 +48,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-900/80" />
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
           </Transition.Child>
 
           <div className="fixed inset-0 flex">
@@ -74,7 +74,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
                   <div className="absolute left-full top-0 flex w-16 justify-center pt-5">
                     <button
                       type="button"
-                      className="-m-2.5 p-2.5"
+                      className="-m-2.5 p-2.5 rounded-full glass hover:bg-white/20 transition-colors duration-200"
                       onClick={() => setOpen(false)}
                     >
                       <span className="sr-only">Close sidebar</span>
@@ -99,33 +99,38 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
 
 function SidebarContent({ pathname }: { pathname: string }) {
   return (
-    <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white dark:bg-gray-800 px-6 pb-4 border-r border-gray-200 dark:border-gray-700">
+    <div className="flex grow flex-col gap-y-5 overflow-y-auto glass-strong px-6 pb-4 border-r border-white/10 backdrop-blur-xl">
       <div className="flex h-16 shrink-0 items-center">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-          SocialBot
-        </h1>
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <span className="text-white font-bold text-sm">S</span>
+          </div>
+          <h1 className="text-xl font-bold gradient-text">
+            SocialBot
+          </h1>
+        </div>
       </div>
       <nav className="flex flex-1 flex-col">
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
-            <ul role="list" className="-mx-2 space-y-1">
-              {navigation.map((item) => (
-                <li key={item.name}>
+            <ul role="list" className="-mx-2 space-y-2">
+              {navigation.map((item, index) => (
+                <li key={item.name} className="animate-slide-in-up" style={{animationDelay: `${index * 50}ms`}}>
                   <Link
                     href={item.href}
                     className={clsx(
                       pathname === item.href
-                        ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-                        : "text-gray-700 dark:text-gray-300 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-gray-50 dark:hover:bg-gray-700",
-                      "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+                        ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border-r-2 border-blue-400"
+                        : "text-gray-300 hover:text-white hover:bg-white/5",
+                      "group flex gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 interactive-card"
                     )}
                   >
                     <item.icon
                       className={clsx(
                         pathname === item.href
-                          ? "text-blue-700 dark:text-blue-300"
-                          : "text-gray-400 dark:text-gray-500 group-hover:text-blue-700 dark:group-hover:text-blue-300",
-                        "h-6 w-6 shrink-0"
+                          ? "text-blue-400"
+                          : "text-gray-400 group-hover:text-white",
+                        "h-6 w-6 shrink-0 transition-colors duration-300"
                       )}
                       aria-hidden="true"
                     />
@@ -134,6 +139,21 @@ function SidebarContent({ pathname }: { pathname: string }) {
                 </li>
               ))}
             </ul>
+          </li>
+          
+          {/* Add AI Assistant Section */}
+          <li className="mt-auto">
+            <div className="glass rounded-xl p-4 border border-white/10">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center animate-glow">
+                  <span className="text-white font-bold text-xs">AI</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">AI Assistant</p>
+                  <p className="text-xs text-gray-400">Online & Ready</p>
+                </div>
+              </div>
+            </div>
           </li>
         </ul>
       </nav>
