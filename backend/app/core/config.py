@@ -3,7 +3,8 @@ Configuration settings for the Social Media Management Bot
 """
 
 from typing import List, Optional
-from pydantic import BaseSettings, validator
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
 import os
 from pathlib import Path
 
@@ -58,7 +59,8 @@ class Settings(BaseSettings):
     TIKTOK_CLIENT_SECRET: Optional[str] = None
     YOUTUBE_API_KEY: Optional[str] = None
     
-    @validator("ALLOWED_HOSTS", pre=True)
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v):
         if isinstance(v, str):
             return [host.strip() for host in v.split(",")]
