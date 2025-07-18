@@ -88,13 +88,21 @@ Social_Media_Management_Bot/
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Docker & Docker Compose** (recommended)
+
+Before getting started, ensure you have the following installed:
+
+- **Docker & Docker Compose** (recommended for easy setup)
 - **Python 3.11+** (for local development)
-- **Node.js 18+** (for local development)
+- **Node.js 18+** (for frontend development)
+- **Git** (for cloning the repository)
+
+**Optional but recommended:**
 - **PostgreSQL** (if not using Docker)
 - **Redis** (if not using Docker)
 
-### Option 1: Docker Compose (Recommended)
+### Option 1: Docker Compose (Recommended) 🐳
+
+This is the easiest way to get the entire application running with all dependencies.
 
 1. **Clone the repository**:
    ```bash
@@ -113,58 +121,133 @@ Social_Media_Management_Bot/
    ```
 
 3. **Access the application**:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
+   - **Frontend**: http://localhost:3000
+   - **Backend API**: http://localhost:8000
+   - **API Documentation**: http://localhost:8000/docs
 
-### Option 2: Local Development
+4. **Stop the application**:
+   ```bash
+   docker-compose down
+   ```
 
-1. **Backend Setup**:
+### Option 2: Local Development Setup 💻
+
+For development and testing, you can run the backend and frontend separately.
+
+#### Backend Setup
+
+1. **Navigate to backend directory**:
    ```bash
    cd backend
-   
-   # Create virtual environment
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   
-   # Install dependencies
-   pip install -r requirements.txt
-   
-   # Set up environment
-   cp .env.example .env
-   # Edit .env with your configuration
-   
-   # Run the server
-   uvicorn main:app --reload
    ```
 
-2. **Frontend Setup**:
+2. **Create and activate virtual environment**:
+   ```bash
+   # Create virtual environment
+   python -m venv venv
+   
+   # Activate virtual environment
+   # On macOS/Linux:
+   source venv/bin/activate
+   # On Windows:
+   venv\Scripts\activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration (see Configuration section below)
+   ```
+
+5. **Run database migrations** (if using PostgreSQL):
+   ```bash
+   alembic upgrade head
+   ```
+
+6. **Start the backend server**:
+   ```bash
+   # Development server with auto-reload
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   
+   # Or simply:
+   python main.py
+   ```
+
+#### Frontend Setup
+
+1. **Navigate to frontend directory**:
    ```bash
    cd frontend
-   
-   # Install dependencies
-   npm install
-   
-   # Run the development server
-   npm run dev
    ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+
+3. **Set up environment variables**:
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your configuration
+   ```
+
+4. **Start the development server**:
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
+
+5. **Access the frontend**:
+   - Open http://localhost:3000 in your browser
+
+### Option 3: Quick Setup Script 🚀
+
+Use the provided setup script for automated installation:
+
+```bash
+# Make the script executable
+chmod +x setup.sh
+
+# Run the setup script
+./setup.sh
+
+# Follow the interactive prompts
+```
+
+The setup script will:
+- Check for required dependencies
+- Install Python packages
+- Set up environment files
+- Initialize the database
+- Start the development servers
 
 ## ⚙️ Configuration
 
 ### Environment Variables
 
-Create a `.env` file in the backend directory:
+The application uses environment variables for configuration. Create `.env` files in the appropriate directories:
+
+#### Backend Configuration (`backend/.env`)
 
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost/socialmedia_db
+# Development Environment Configuration
+DEBUG=true
+SECRET_KEY=your-super-secret-key-change-in-production
+DATABASE_URL=sqlite+aiosqlite:///./social_media_bot.db
 REDIS_URL=redis://localhost:6379/0
 
-# Security
-SECRET_KEY=your-super-secret-key-here
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+# CORS Settings
+ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
 
-# OAuth2 Providers
+# OAuth2 Providers (Get these from respective platforms)
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 MICROSOFT_CLIENT_ID=your-microsoft-client-id
@@ -173,11 +256,126 @@ MICROSOFT_CLIENT_SECRET=your-microsoft-client-secret
 # AI Services
 OPENAI_API_KEY=your-openai-api-key
 
-# Social Media APIs (per-user configuration via UI)
+# File Upload Settings
+MAX_FILE_SIZE=104857600  # 100MB
+UPLOAD_DIR=uploads
+
+# Social Media API Keys (Platform-specific)
+# Instagram
 INSTAGRAM_APP_ID=your-instagram-app-id
+INSTAGRAM_APP_SECRET=your-instagram-app-secret
+
+# Twitter/X
 TWITTER_API_KEY=your-twitter-api-key
-# ... etc
+TWITTER_API_SECRET=your-twitter-api-secret
+TWITTER_BEARER_TOKEN=your-twitter-bearer-token
+
+# TikTok
+TIKTOK_CLIENT_KEY=your-tiktok-client-key
+TIKTOK_CLIENT_SECRET=your-tiktok-client-secret
+
+# Facebook
+FACEBOOK_APP_ID=your-facebook-app-id
+FACEBOOK_APP_SECRET=your-facebook-app-secret
+
+# LinkedIn
+LINKEDIN_CLIENT_ID=your-linkedin-client-id
+LINKEDIN_CLIENT_SECRET=your-linkedin-client-secret
+
+# YouTube
+YOUTUBE_API_KEY=your-youtube-api-key
 ```
+
+#### Frontend Configuration (`frontend/.env.local`)
+
+```env
+# API Configuration
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_API_VERSION=v1
+
+# Authentication
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-nextauth-secret
+
+# OAuth Providers
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
+NEXT_PUBLIC_MICROSOFT_CLIENT_ID=your-microsoft-client-id
+
+# Feature Flags
+NEXT_PUBLIC_ENABLE_ANALYTICS=true
+NEXT_PUBLIC_ENABLE_AI_FEATURES=true
+NEXT_PUBLIC_ENABLE_VIDEO_PROCESSING=true
+```
+
+### Database Configuration
+
+#### SQLite (Development)
+```env
+DATABASE_URL=sqlite+aiosqlite:///./social_media_bot.db
+```
+
+#### PostgreSQL (Production)
+```env
+DATABASE_URL=postgresql+asyncpg://username:password@localhost:5432/social_media_bot
+```
+
+#### Database Setup Commands
+
+```bash
+# Initialize database
+cd backend
+alembic upgrade head
+
+# Create new migration (if needed)
+alembic revision --autogenerate -m "Description of changes"
+
+# Reset database (development only)
+rm social_media_bot.db  # For SQLite
+alembic upgrade head
+```
+
+### Getting API Keys
+
+To fully utilize the Social Media Management Bot, you'll need API keys from various platforms:
+
+#### Instagram Basic Display API
+1. Go to [Facebook Developers](https://developers.facebook.com/)
+2. Create a new app and add Instagram Basic Display product
+3. Configure OAuth redirect URIs
+4. Copy App ID and App Secret
+
+#### Twitter API v2
+1. Apply for access at [Twitter Developer Portal](https://developer.twitter.com/)
+2. Create a new app in your project
+3. Generate API Key, API Secret, and Bearer Token
+4. Set up OAuth 2.0 with callback URLs
+
+#### TikTok for Developers
+1. Register at [TikTok for Developers](https://developers.tiktok.com/)
+2. Create a new app
+3. Configure Login Kit and Content Posting API
+4. Copy Client Key and Client Secret
+
+#### Google APIs (YouTube)
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable YouTube Data API v3
+4. Create credentials (API Key and OAuth 2.0)
+
+#### LinkedIn Developer Platform
+1. Create an app at [LinkedIn Developer Portal](https://www.linkedin.com/developers/)
+2. Request access to Marketing Developer Platform
+3. Configure OAuth 2.0 redirect URLs
+4. Copy Client ID and Client Secret
+
+### Security Best Practices
+
+1. **Environment Variables**: Never commit `.env` files to version control
+2. **API Keys**: Rotate API keys regularly and use least-privilege access
+3. **Database**: Use strong passwords and enable SSL connections
+4. **HTTPS**: Always use HTTPS in production
+5. **CORS**: Configure ALLOWED_HOSTS properly for your domain
+6. **Secrets**: Use a secure secret management system in production
 
 ## 📚 API Documentation
 
@@ -211,22 +409,80 @@ GET  /api/v1/analytics/dashboard  # Dashboard metrics
 
 ## 🧪 Testing
 
-### Backend Tests
+The Social Media Management Bot includes comprehensive testing to ensure reliability and functionality.
+
+### Test Types
+
+- **Integration Tests**: End-to-end functionality testing
+- **Unit Tests**: Individual component testing  
+- **API Tests**: REST endpoint validation
+- **Authentication Tests**: Security and OAuth flow testing
+
+### Quick Test Execution
+
 ```bash
-cd backend
-pytest
+# Run all integration tests
+python run_integration_tests.py --verbose --html-report
+
+# Run specific test suite
+python run_integration_tests.py --suite authentication
+
+# Run tests for specific platform
+python run_integration_tests.py --platform instagram
+
+# Include coverage analysis
+python run_integration_tests.py --coverage
 ```
 
-### Frontend Tests
+### Test Suites
+
+#### 1. Authentication Tests
+- User registration and login flows
+- JWT token management
+- Role-based access control
+- Team collaboration permissions
+
+#### 2. Social Account Linking Tests  
+- OAuth flows for all platforms (Instagram, Twitter, TikTok, etc.)
+- Account management and validation
+- Token refresh and reauthorization
+- Multi-platform account handling
+
+#### 3. Content Posting Tests
+- Content creation and publishing
+- Multi-platform posting
+- Scheduling and automation
+- Content management and templates
+
+#### 4. Analytics Tests
+- Data retrieval from all platforms
+- Cross-platform analytics comparison
+- Dashboard generation
+- Real-time monitoring and alerts
+
+### Running Tests
+
 ```bash
+# Backend unit tests
+cd backend
+pytest tests/ -v
+
+# Frontend tests  
 cd frontend
 npm test
+
+# Integration tests (from project root)
+python run_integration_tests.py
 ```
 
-### End-to-End Tests
-```bash
-npm run e2e
-```
+### Test Reports
+
+Test execution generates detailed reports:
+- **HTML Reports**: Visual test results and coverage
+- **Coverage Analysis**: Code coverage metrics
+- **Performance Metrics**: Test execution times
+
+For detailed testing documentation, see [TESTING.md](TESTING.md).
 
 ## 🔧 Development
 
