@@ -280,3 +280,26 @@ Thumbs.db
 # Media processing temporary files
 *.processing
 *.tmp.*
+
+# React Native
+mobile/node_modules/
+mobile/npm-debug.log*
+mobile/yarn-debug.log*
+mobile/yarn-error.log*
+mobile/.bundle
+mobile/ios/Pods/
+mobile/ios/build/
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/release/
+mobile/.gradle/
+mobile/metro.config.js.bak
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/.env.local
+mobile/.env.development.local
+mobile/.env.test.local
+mobile/.env.production.local
