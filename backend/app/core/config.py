@@ -2,9 +2,9 @@
 Configuration settings for the Social Media Management Bot
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 from pathlib import Path
 
@@ -64,11 +64,11 @@ class Settings(BaseSettings):
     def assemble_cors_origins(cls, v):
         if isinstance(v, str):
             return [host.strip() for host in v.split(",")]
-        return v
+        elif isinstance(v, list):
+            return v
+        return ["*"]
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 
 # Create settings instance
