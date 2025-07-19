@@ -13,45 +13,10 @@ import {
   EyeIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
-
-const stats = [
-  {
-    name: "Total Posts",
-    value: 2547,
-    change: "+12%",
-    changeType: "increase",
-    icon: PhotoIcon,
-    gradient: "from-blue-500 to-cyan-500",
-    description: "Published this month",
-  },
-  {
-    name: "Total Engagement",
-    value: 84.2,
-    change: "+5.4%",
-    changeType: "increase",
-    icon: ChartBarIcon,
-    gradient: "from-purple-500 to-pink-500",
-    description: "Likes, comments & shares",
-  },
-  {
-    name: "Scheduled Posts",
-    value: 23,
-    change: "-2%",
-    changeType: "decrease",
-    icon: CalendarIcon,
-    gradient: "from-green-500 to-teal-500",
-    description: "Ready to publish",
-  },
-  {
-    name: "Connected Accounts",
-    value: 8,
-    change: "+1",
-    changeType: "increase",
-    icon: UserGroupIcon,
-    gradient: "from-orange-500 to-red-500",
-    description: "Active platforms",
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { analyticsApi } from "@/lib/analytics-api";
+import { contentApi } from "@/lib/content-api";
+import { socialAccountsApi } from "@/lib/social-accounts-api";
 
 const recentActivity = [
   {
@@ -123,6 +88,61 @@ function AnimatedCounter({ value, duration = 2000, suffix = "" }: { value: numbe
 }
 
 export function DashboardOverview() {
+  // Fetch real dashboard data
+  const { data: dashboardData } = useQuery({
+    queryKey: ['dashboard-data'],
+    queryFn: analyticsApi.getDashboardData,
+  });
+
+  const { data: contentStats } = useQuery({
+    queryKey: ['content-stats'],
+    queryFn: contentApi.getContentStats,
+  });
+
+  const { data: accountsStats } = useQuery({
+    queryKey: ['social-accounts-stats'],
+    queryFn: socialAccountsApi.getStats,
+  });
+
+  // Create stats from real data
+  const stats = [
+    {
+      name: "Total Posts",
+      value: contentStats?.total_content || 0,
+      change: "+12%",
+      changeType: "increase" as const,
+      icon: PhotoIcon,
+      gradient: "from-blue-500 to-cyan-500",
+      description: "Published content",
+    },
+    {
+      name: "Total Engagement",
+      value: dashboardData ? Math.round(dashboardData.total_engagement / 1000 * 10) / 10 : 0,
+      change: dashboardData ? `${dashboardData.engagement_growth >= 0 ? '+' : ''}${dashboardData.engagement_growth}%` : "+0%",
+      changeType: (dashboardData?.engagement_growth || 0) >= 0 ? "increase" as const : "decrease" as const,
+      icon: ChartBarIcon,
+      gradient: "from-purple-500 to-pink-500",
+      description: "Likes, comments & shares",
+    },
+    {
+      name: "Scheduled Posts",
+      value: dashboardData?.scheduled_posts || 0,
+      change: "-2%",
+      changeType: "decrease" as const,
+      icon: CalendarIcon,
+      gradient: "from-green-500 to-teal-500",
+      description: "Ready to publish",
+    },
+    {
+      name: "Connected Accounts",
+      value: accountsStats?.connected_accounts || 0,
+      change: "+1",
+      changeType: "increase" as const,
+      icon: UserGroupIcon,
+      gradient: "from-orange-500 to-red-500",
+      description: "Active platforms",
+    },
+  ];
   return (
     <div className="space-y-8">
       {/* Welcome section with enhanced styling */}
