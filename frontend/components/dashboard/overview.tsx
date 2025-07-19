@@ -91,7 +91,7 @@ export function DashboardOverview() {
   // Fetch real dashboard data
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboard-data'],
-    queryFn: analyticsApi.getDashboardData,
+    queryFn: analyticsApi.getDashboard,
   });
 
   const { data: contentStats } = useQuery({
@@ -108,7 +108,7 @@ export function DashboardOverview() {
   const stats = [
     {
       name: "Total Posts",
-      value: contentStats?.total_content || 0,
+      value: contentStats?.total || 0,
       change: "+12%",
       changeType: "increase" as const,
       icon: PhotoIcon,
@@ -117,16 +117,16 @@ export function DashboardOverview() {
     },
     {
       name: "Total Engagement",
-      value: dashboardData ? Math.round(dashboardData.total_engagement / 1000 * 10) / 10 : 0,
-      change: dashboardData ? `${dashboardData.engagement_growth >= 0 ? '+' : ''}${dashboardData.engagement_growth}%` : "+0%",
-      changeType: (dashboardData?.engagement_growth || 0) >= 0 ? "increase" as const : "decrease" as const,
+      value: dashboardData ? Math.round(dashboardData.overview.total_engagement.value / 1000 * 10) / 10 : 0,
+      change: dashboardData ? `${dashboardData.overview.total_engagement.change >= 0 ? '+' : ''}${dashboardData.overview.total_engagement.change}%` : "+0%",
+      changeType: (dashboardData?.overview?.total_engagement?.change || 0) >= 0 ? "increase" as const : "decrease" as const,
       icon: ChartBarIcon,
       gradient: "from-purple-500 to-pink-500",
       description: "Likes, comments & shares",
     },
     {
       name: "Scheduled Posts",
-      value: dashboardData?.scheduled_posts || 0,
+      value: dashboardData?.platform_metrics?.length || 0,
       change: "-2%",
       changeType: "decrease" as const,
       icon: CalendarIcon,

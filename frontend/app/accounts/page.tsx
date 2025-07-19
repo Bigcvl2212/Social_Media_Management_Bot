@@ -11,6 +11,7 @@ import {
   ArrowPathIcon,
   Cog6ToothIcon,
   PlusIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import {
   socialAccountsApi,
@@ -43,6 +44,7 @@ const statusColors = {
   [AccountStatus.DISCONNECTED]: "text-gray-600 bg-gray-100",
   [AccountStatus.ERROR]: "text-red-600 bg-red-100",
   [AccountStatus.EXPIRED]: "text-yellow-600 bg-yellow-100",
+  [AccountStatus.PENDING]: "text-blue-600 bg-blue-100",
 };
 
 const statusIcons = {
@@ -50,6 +52,7 @@ const statusIcons = {
   [AccountStatus.DISCONNECTED]: XCircleIcon,
   [AccountStatus.ERROR]: ExclamationTriangleIcon,
   [AccountStatus.EXPIRED]: ExclamationTriangleIcon,
+  [AccountStatus.PENDING]: ClockIcon,
 };
 
 export default function AccountsPage() {
@@ -78,8 +81,12 @@ export default function AccountsPage() {
   // Connect account mutation
   const connectMutation = useMutation({
     mutationFn: async (platform: SocialPlatform) => {
-      const { auth_url } = await socialAccountsApi.startOAuth(platform);
-      window.location.href = auth_url;
+      const result = await socialAccountsApi.startOAuth(platform);
+      if (result.auth_url) {
+        window.location.href = result.auth_url;
+      } else {
+        throw new Error(result.message || 'Failed to get auth URL');
+      }
     },
     onError: (error) => {
       console.error('Failed to start OAuth:', error);
@@ -105,7 +112,7 @@ export default function AccountsPage() {
 
   // Update account mutation
   const updateMutation = useMutation({
-    mutationFn: ({ accountId, data }: { accountId: number; data: { auto_post?: boolean; auto_engage?: boolean } }) =>
+    mutationFn: ({ accountId, data }: { accountId: string; data: { auto_post?: boolean; auto_engage?: boolean } }) =>
       socialAccountsApi.updateAccount(accountId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
@@ -114,7 +121,7 @@ export default function AccountsPage() {
   });
 
   const getConnectedAccount = (platform: SocialPlatform): SocialAccount | undefined => {
-    return accounts?.find(
+    return accounts?.accounts?.find(
       (acc) => acc.platform === platform && acc.status === AccountStatus.CONNECTED
     );
   };
@@ -123,13 +130,13 @@ export default function AccountsPage() {
     connectMutation.mutate(platform);
   };
 
-  const handleDisconnect = (accountId: number) => {
+  const handleDisconnect = (accountId: string) => {
     if (confirm('Are you sure you want to disconnect this account?')) {
       disconnectMutation.mutate(accountId);
     }
   };
 
-  const handleSync = (accountId: number) => {
+  const handleSync = (accountId: string) => {
     syncMutation.mutate(accountId);
   };
 
@@ -167,13 +174,13 @@ export default function AccountsPage() {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {Math.round(stats.connection_rate)}%
+                  {stats.total_accounts > 0 ? Math.round((stats.connected_accounts / stats.total_accounts) * 100) : 0}%
                 </div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">Connection Rate</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                  {stats.platforms_connected.length}
+                  {Object.values(stats.by_platform || {}).filter(count => count > 0).length}
                 </div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">Platforms</div>
               </div>
@@ -183,7 +190,7 @@ export default function AccountsPage() {
 
         {/* Accounts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {platformsData?.platforms.map((platform: Platform) => {
+          {platformsData?.map((platform: Platform) => {
             const connectedAccount = getConnectedAccount(platform.platform as SocialPlatform);
             const isConnected = connectedAccount?.status === AccountStatus.CONNECTED;
             const StatusIcon = connectedAccount ? statusIcons[connectedAccount.status] : LinkIcon;
@@ -334,7 +341,7 @@ export default function AccountsPage() {
                       <input
                         type="checkbox"
                         name="auto_post"
-                        defaultChecked={selectedAccount.auto_post}
+                        defaultChecked={selectedAccount.account_settings?.auto_post as boolean}
                         className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       />
                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -348,7 +355,7 @@ export default function AccountsPage() {
                       <input
                         type="checkbox"
                         name="auto_engage"
-                        defaultChecked={selectedAccount.auto_engage}
+                        defaultChecked={selectedAccount.account_settings?.auto_engage as boolean}
                         className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       />
                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">

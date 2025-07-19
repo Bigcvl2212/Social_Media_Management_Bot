@@ -61,7 +61,7 @@ function MetricCard({ title, value, change, changeType, icon: Icon, color }: Met
 }
 
 export default function AnalyticsPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState(30);
+  const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
 
   // Fetch analytics data
   const { data: analytics, isLoading, error } = useQuery({
@@ -118,13 +118,13 @@ export default function AnalyticsPage() {
           <div className="flex items-center space-x-2">
             <select
               value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
+              onChange={(e) => setSelectedPeriod(e.target.value as '7d' | '30d' | '90d' | '1y')}
               className="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
-              <option value={7}>Last 7 days</option>
-              <option value={30}>Last 30 days</option>
-              <option value={90}>Last 3 months</option>
-              <option value={365}>Last year</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="90d">Last 3 months</option>
+              <option value="1y">Last year</option>
             </select>
           </div>
         </div>
@@ -133,25 +133,25 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Total Posts"
-            value={analytics.overview.total_posts.toLocaleString()}
+            value={analytics?.data?.overview?.total_posts?.value?.toLocaleString() || '0'}
             icon={DocumentTextIcon}
             color="bg-blue-500"
           />
           <MetricCard
             title="Total Impressions"
-            value={analytics.overview.total_impressions.toLocaleString()}
+            value={analytics?.data?.overview?.total_reach?.value?.toLocaleString() || '0'}
             icon={EyeIcon}
             color="bg-green-500"
           />
           <MetricCard
             title="Total Engagements"
-            value={analytics.overview.total_engagements.toLocaleString()}
+            value={analytics?.data?.overview?.total_engagement?.value?.toLocaleString() || '0'}
             icon={HeartIcon}
             color="bg-purple-500"
           />
           <MetricCard
             title="Engagement Rate"
-            value={`${analytics.overview.engagement_rate}%`}
+            value={`${analytics?.data?.overview?.total_engagement?.change || 0}%`}
             icon={ChartBarIcon}
             color="bg-orange-500"
           />
@@ -160,26 +160,26 @@ export default function AnalyticsPage() {
         {/* Secondary Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
-            title="Scheduled Posts"
-            value={analytics.overview.scheduled_posts.toLocaleString()}
+            title="Platform Metrics"
+            value={analytics?.data?.platform_metrics?.length?.toString() || '0'}
             icon={CalendarIcon}
             color="bg-yellow-500"
           />
           <MetricCard
-            title="Published Posts"
-            value={analytics.overview.published_posts.toLocaleString()}
+            title="Top Content"
+            value={analytics?.data?.top_content?.length?.toString() || '0'}
             icon={DocumentTextIcon}
             color="bg-green-500"
           />
           <MetricCard
-            title="Active Accounts"
-            value={`${analytics.overview.active_accounts}/${analytics.overview.total_accounts}`}
+            title="Engagement Trend"
+            value={analytics?.data?.engagement_trend?.length?.toString() || '0'}
             icon={UsersIcon}
             color="bg-blue-500"
           />
           <MetricCard
-            title="Failed Posts"
-            value={analytics.overview.failed_posts.toLocaleString()}
+            title="Follower Growth"
+            value={analytics?.data?.follower_growth?.length?.toString() || '0'}
             icon={ExclamationTriangleIcon}
             color="bg-red-500"
           />
@@ -191,7 +191,7 @@ export default function AnalyticsPage() {
             Platform Performance
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {analytics.platforms.map((platform) => (
+            {analytics?.data?.platform_metrics?.map((platform) => (
               <div
                 key={platform.platform}
                 className="border border-gray-200 dark:border-gray-600 rounded-lg p-4"
@@ -201,27 +201,27 @@ export default function AnalyticsPage() {
                     {platform.platform}
                   </h4>
                   <span className={`text-sm font-medium ${
-                    platform.growth_rate >= 0 ? 'text-green-600' : 'text-red-600'
+                    platform.engagement >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {platform.growth_rate >= 0 ? '+' : ''}{platform.growth_rate}%
+                    {platform.engagement.toLocaleString()}
                   </span>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Posts:</span>
-                    <span className="text-gray-900 dark:text-white">{platform.posts_count}</span>
+                    <span className="text-gray-900 dark:text-white">{platform.posts}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Impressions:</span>
-                    <span className="text-gray-900 dark:text-white">{platform.impressions.toLocaleString()}</span>
+                    <span className="text-gray-500 dark:text-gray-400">Reach:</span>
+                    <span className="text-gray-900 dark:text-white">{platform.reach.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Engagements:</span>
-                    <span className="text-gray-900 dark:text-white">{platform.engagements.toLocaleString()}</span>
+                    <span className="text-gray-500 dark:text-gray-400">Followers:</span>
+                    <span className="text-gray-900 dark:text-white">{platform.followers.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Engagement Rate:</span>
-                    <span className="text-gray-900 dark:text-white">{platform.engagement_rate}%</span>
+                    <span className="text-gray-900 dark:text-white">{platform.engagement}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-gray-400">Followers:</span>
@@ -260,14 +260,14 @@ export default function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
-                {analytics.top_content.map((content) => (
-                  <tr key={content.content_id}>
+                {analytics?.data?.top_content?.map((content) => (
+                  <tr key={content.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
                         {content.title}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(content.published_date).toLocaleDateString()}
+                        {new Date(content.published_at).toLocaleDateString()}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -276,7 +276,7 @@ export default function AnalyticsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {content.impressions.toLocaleString()}
+                      {content.views.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-4 text-sm text-gray-900 dark:text-white">
@@ -316,7 +316,7 @@ export default function AnalyticsPage() {
                 Chart visualization would go here
               </p>
               <p className="text-sm text-gray-400">
-                {analytics.engagement_trend.length} data points available
+                {analytics?.data?.engagement_trend?.length || 0} data points available
               </p>
             </div>
           </div>

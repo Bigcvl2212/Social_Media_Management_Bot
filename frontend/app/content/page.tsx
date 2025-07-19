@@ -31,7 +31,6 @@ const statusColors = {
   [ContentStatus.DRAFT]: "bg-gray-100 text-gray-800",
   [ContentStatus.SCHEDULED]: "bg-blue-100 text-blue-800",
   [ContentStatus.PUBLISHED]: "bg-green-100 text-green-800",
-  [ContentStatus.FAILED]: "bg-red-100 text-red-800",
   [ContentStatus.ARCHIVED]: "bg-yellow-100 text-yellow-800",
 };
 
@@ -73,7 +72,7 @@ export default function ContentPage() {
         hashtags?: string[];
       }
     }) => {
-      return contentApi.uploadContent(file, metadata, setUploadProgress);
+      return contentApi.uploadFile(file, setUploadProgress);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content'] });
@@ -198,7 +197,7 @@ export default function ContentPage() {
               <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto" />
               <p className="mt-2 text-red-600">Error loading content</p>
             </div>
-          ) : !contentData?.items.length ? (
+          ) : !contentData?.contents.length ? (
             <div className="text-center py-12">
               <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No content yet</h3>
@@ -218,7 +217,7 @@ export default function ContentPage() {
           ) : (
             <div className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {contentData.items.map((content) => {
+                {contentData.contents.map((content) => {
                   const Icon = contentTypeIcons[content.content_type];
                   return (
                     <div
@@ -227,9 +226,9 @@ export default function ContentPage() {
                     >
                       {/* Thumbnail/Icon */}
                       <div className="aspect-video bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                        {content.thumbnail_path ? (
+                        {content.thumbnail_url ? (
                           <Image
-                            src={content.thumbnail_path}
+                            src={content.thumbnail_url}
                             alt={content.title}
                             width={300}
                             height={200}
@@ -290,7 +289,7 @@ export default function ContentPage() {
               </div>
               
               {/* Pagination */}
-              {contentData.pages > 1 && (
+              {contentData && Math.ceil(contentData.total / filters.size) > 1 && (
                 <div className="mt-6 flex items-center justify-between">
                   <p className="text-sm text-gray-700 dark:text-gray-300">
                     Showing <span className="font-medium">{(filters.page - 1) * filters.size + 1}</span> to{' '}
@@ -309,7 +308,7 @@ export default function ContentPage() {
                     </button>
                     <button
                       onClick={() => handleFilterChange({ page: filters.page + 1 })}
-                      disabled={filters.page >= contentData.pages}
+                      disabled={filters.page >= Math.ceil(contentData.total / filters.size)}
                       className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
                     >
                       Next
