@@ -4,10 +4,6 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PostStatus } from '../types/post';
-import { API_ENDPOINTS } from '../services/api';
-
-// Unused import that should be removed
-import { Switch } from 'react-native';
 
 interface PostDraft {
   id: string;
@@ -18,9 +14,6 @@ interface PostDraft {
 
 class OfflineStorageService {
   private static instance: OfflineStorageService;
-  
-  // Unused variable that should be removed
-  private draftId = 'unused-draft-id';
 
   public static getInstance(): OfflineStorageService {
     if (!OfflineStorageService.instance) {
