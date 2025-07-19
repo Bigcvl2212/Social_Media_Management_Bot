@@ -5,9 +5,6 @@
 import { Platform } from 'react-native';
 import { PostStatus } from '../types/post';
 
-// Unused import that should be removed
-import { API_ENDPOINTS } from './api';
-
 interface NotificationData {
   title: string;
   body: string;
@@ -32,7 +29,7 @@ class PushNotificationService {
     }
   }
 
-  async scheduleNotification(notification: NotificationData, delay: number): Promise<void> {
+  async scheduleNotification(notification: NotificationData, _delay: number): Promise<void> {
     try {
       console.log('Scheduling notification:', notification.title);
     } catch (error) {
@@ -55,12 +52,7 @@ class PushNotificationService {
   }
 
   async requestPermissions(): Promise<boolean> {
-    try {
-      return true;
-    } catch (error) {
-      console.error('Error requesting notification permissions:', error);
-      return false;
-    }
+    return true;
   }
 }
 

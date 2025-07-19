@@ -9,18 +9,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
 } from 'react-native';
 
-// Unused imports that should be removed
-import { aiContentService } from '../../services/aiContentService';
-import { useTranslation } from 'react-i18next';
-import { PostStatus } from '../../types/post';
-
 export default function CreatePostScreen() {
-  // Unused variable that should be removed  
-  const { t } = useTranslation();
-  const draftId = 'unused-draft-id';
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>

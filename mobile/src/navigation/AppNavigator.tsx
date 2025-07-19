@@ -101,7 +101,6 @@ function AuthStackNavigator() {
 function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
   const isDarkMode = useColorScheme() === 'dark';
-  const focused = true; // unused variable
 
   // TODO: Add loading screen
   if (isLoading) {

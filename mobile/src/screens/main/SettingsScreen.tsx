@@ -12,13 +12,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-// Unused imports that should be removed
-import { useTranslation } from 'react-i18next';
-import { pushNotificationService } from '../../services/pushNotificationService';
-
 export default function SettingsScreen() {
-  // Unused variable that should be removed
-  const { t } = useTranslation();
   
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = React.useState(false);
