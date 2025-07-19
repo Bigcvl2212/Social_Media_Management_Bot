@@ -63,9 +63,8 @@ describe('AuthService', () => {
         updated_at: '2024-01-01T00:00:00Z',
       };
 
-      (apiClient.post as jest.Mock)
-        .mockResolvedValueOnce({ data: mockToken })  // login response
-        .mockResolvedValueOnce({ data: mockUser });  // profile response
+      (apiClient.post as jest.Mock).mockResolvedValueOnce({ data: mockToken });  // login response
+      (apiClient.get as jest.Mock).mockResolvedValueOnce({ data: mockUser });  // profile response
 
       const result = await AuthService.login(mockCredentials);
 
@@ -86,7 +85,8 @@ describe('AuthService', () => {
       expect(AsyncStorage.setItem).toHaveBeenCalledWith('refresh_token', 'refresh_token_123');
 
       // Verify profile fetch
-      expect(apiClient.post).toHaveBeenCalledTimes(2);
+      expect(apiClient.post).toHaveBeenCalledTimes(1);  // Only login call
+      expect(apiClient.get).toHaveBeenCalledTimes(1);   // Profile fetch call
     });
 
     it('should handle login errors', async () => {
@@ -113,9 +113,8 @@ describe('AuthService', () => {
         expires_in: 3600,
       };
 
-      (apiClient.post as jest.Mock)
-        .mockResolvedValueOnce({ data: mockToken })  // login succeeds
-        .mockRejectedValueOnce(new Error('Profile fetch failed'));  // profile fails
+      (apiClient.post as jest.Mock).mockResolvedValueOnce({ data: mockToken });  // login succeeds
+      (apiClient.get as jest.Mock).mockRejectedValueOnce(new Error('Profile fetch failed'));  // profile fails
 
       await expect(AuthService.login(mockCredentials)).rejects.toThrow('Profile fetch failed');
     });
@@ -320,12 +319,14 @@ describe('AuthService', () => {
 
     it('should handle missing refresh token', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+      (AsyncStorage.multiRemove as jest.Mock).mockResolvedValue(undefined); // Reset logout mock
 
       await expect(AuthService.refreshToken()).rejects.toThrow('No refresh token available');
     });
 
     it('should handle refresh token errors and logout', async () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue('invalid_refresh_token');
+      (AsyncStorage.multiRemove as jest.Mock).mockResolvedValue(undefined); // Reset logout mock
       (apiClient.post as jest.Mock).mockRejectedValue(new Error('Invalid refresh token'));
 
       await expect(AuthService.refreshToken()).rejects.toThrow('Invalid refresh token');

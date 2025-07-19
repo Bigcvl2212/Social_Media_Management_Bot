@@ -6,22 +6,13 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { useColorScheme } from 'react-native';
-import { ThemeProvider, useTheme } from '../../../src/contexts/ThemeContext';
-import { MMKV } from 'react-native-mmkv';
 import { Text, TouchableOpacity } from 'react-native';
+import { ThemeProvider, useTheme } from '../../src/contexts/ThemeContext';
+import { MMKV } from 'react-native-mmkv';
 
-// Mock dependencies
-jest.mock('react-native', () => ({
-  ...jest.requireActual('react-native'),
-  useColorScheme: jest.fn(),
-}));
-
-jest.mock('react-native-mmkv', () => ({
-  MMKV: jest.fn().mockImplementation(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
-  })),
-}));
+// Access the mocked functions
+const mockGetString = jest.fn();
+const mockSet = jest.fn();
 
 // Test component that uses theme
 const TestComponent = () => {
@@ -46,20 +37,21 @@ const TestComponent = () => {
 };
 
 describe('ThemeContext', () => {
-  let mockStorage: any;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    mockStorage = {
-      getString: jest.fn(),
-      set: jest.fn(),
-    };
-    (MMKV as jest.Mock).mockImplementation(() => mockStorage);
+    
+    // Setup the MMKV mock implementation for this test
+    (MMKV as jest.Mock).mockImplementation(() => ({
+      getString: mockGetString,
+      set: mockSet,
+    }));
+    
+    mockGetString.mockReturnValue(null); // Default return value
     (useColorScheme as jest.Mock).mockReturnValue('light');
   });
 
   it('should provide light theme by default', () => {
-    mockStorage.getString.mockReturnValue(null);
+    mockGetString.mockReturnValue(null);
     
     const { getByTestId } = render(
       <ThemeProvider>
@@ -73,7 +65,7 @@ describe('ThemeContext', () => {
   });
 
   it('should use stored theme preference', () => {
-    mockStorage.getString.mockReturnValue('dark');
+    mockGetString.mockReturnValue('dark');
     
     const { getByTestId } = render(
       <ThemeProvider>
@@ -86,7 +78,7 @@ describe('ThemeContext', () => {
   });
 
   it('should switch to dark theme when selected', () => {
-    mockStorage.getString.mockReturnValue(null);
+    mockGetString.mockReturnValue(null);
     
     const { getByTestId } = render(
       <ThemeProvider>
@@ -98,11 +90,11 @@ describe('ThemeContext', () => {
 
     expect(getByTestId('theme-mode').props.children).toBe('dark');
     expect(getByTestId('is-dark').props.children).toBe('true');
-    expect(mockStorage.set).toHaveBeenCalledWith('theme_mode', 'dark');
+    expect(mockSet).toHaveBeenCalledWith('theme_mode', 'dark');
   });
 
   it('should switch to light theme when selected', () => {
-    mockStorage.getString.mockReturnValue('dark');
+    mockGetString.mockReturnValue('dark');
     
     const { getByTestId } = render(
       <ThemeProvider>
@@ -114,12 +106,12 @@ describe('ThemeContext', () => {
 
     expect(getByTestId('theme-mode').props.children).toBe('light');
     expect(getByTestId('is-dark').props.children).toBe('false');
-    expect(mockStorage.set).toHaveBeenCalledWith('theme_mode', 'light');
+    expect(mockSet).toHaveBeenCalledWith('theme_mode', 'light');
   });
 
   it('should follow system theme in auto mode', () => {
     (useColorScheme as jest.Mock).mockReturnValue('dark');
-    mockStorage.getString.mockReturnValue('auto');
+    mockGetString.mockReturnValue('auto');
     
     const { getByTestId } = render(
       <ThemeProvider>
@@ -132,7 +124,7 @@ describe('ThemeContext', () => {
   });
 
   it('should provide correct dark theme colors', () => {
-    mockStorage.getString.mockReturnValue('dark');
+    mockGetString.mockReturnValue('dark');
     
     const { getByTestId } = render(
       <ThemeProvider>
@@ -144,7 +136,7 @@ describe('ThemeContext', () => {
   });
 
   it('should provide correct light theme colors', () => {
-    mockStorage.getString.mockReturnValue('light');
+    mockGetString.mockReturnValue('light');
     
     const { getByTestId } = render(
       <ThemeProvider>

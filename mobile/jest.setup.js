@@ -3,7 +3,22 @@
  */
 /* eslint-env jest */
 
+import 'react-native-gesture-handler/jestSetup';
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
+
+// Setup testing environment
+global.__DEV__ = true;
+
+// Mock MMKV first before any other imports
+jest.mock('react-native-mmkv', () => ({
+  MMKV: jest.fn().mockImplementation(() => ({
+    getString: jest.fn(),
+    set: jest.fn(),
+  })),
+}));
+
+// Mock AsyncStorage first
+jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);

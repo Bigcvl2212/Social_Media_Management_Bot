@@ -85,7 +85,7 @@ class AuthService {
       await AsyncStorage.multiRemove(['access_token', 'refresh_token']);
     } catch (error) {
       console.error('Logout error:', error);
-      throw error;
+      // Don't throw - logout should always succeed to clear app state
     }
   }
 
