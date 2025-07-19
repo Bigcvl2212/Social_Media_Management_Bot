@@ -125,12 +125,12 @@ export type RootStackParamList = {
   Dashboard: undefined;
   Profile: undefined;
   SocialAccounts: undefined;
+  Settings: undefined;
   LinkAccount: { platform: PlatformType };
   ContentCalendar: undefined;
   CreatePost: undefined;
   EditPost: { postId: string };
   Analytics: undefined;
-  Settings: undefined;
 };
 
 export type MainTabParamList = {

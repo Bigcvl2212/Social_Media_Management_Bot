@@ -8,6 +8,15 @@ import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/asy
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
 
+// Mock MMKV
+jest.mock('react-native-mmkv', () => ({
+  MMKV: jest.fn().mockImplementation(() => ({
+    getString: jest.fn(),
+    set: jest.fn(),
+    delete: jest.fn(),
+  })),
+}));
+
 // Mock React Native gesture handler
 jest.mock('react-native-gesture-handler', () => {
   const mockView = 'View';
@@ -52,6 +61,7 @@ jest.mock('@react-navigation/native', () => {
     useRoute: () => ({
       params: {},
     }),
+    useFocusEffect: jest.fn(),
   };
 });
 
@@ -69,8 +79,67 @@ jest.mock('@react-navigation/bottom-tabs', () => ({
   }),
 }));
 
+// Mock Firebase
+jest.mock('@react-native-firebase/messaging', () => ({
+  __esModule: true,
+  default: () => ({
+    hasPermission: jest.fn(() => Promise.resolve(true)),
+    subscribeToTopic: jest.fn(),
+    unsubscribeFromTopic: jest.fn(),
+    requestPermission: jest.fn(() => Promise.resolve(true)),
+    getToken: jest.fn(() => Promise.resolve('mock-token')),
+    onMessage: jest.fn(),
+    onNotificationOpenedApp: jest.fn(),
+    getInitialNotification: jest.fn(() => Promise.resolve(null)),
+  }),
+}));
+
 // Mock vector icons
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
+
+// Mock other React Native modules
+jest.mock('react-native-image-picker', () => ({
+  launchImageLibrary: jest.fn(),
+  launchCamera: jest.fn(),
+}));
+
+jest.mock('react-native-localize', () => ({
+  getLocales: jest.fn(() => [{ languageCode: 'en', countryCode: 'US' }]),
+}));
+
+jest.mock('@react-native-community/netinfo', () => ({
+  addEventListener: jest.fn(),
+  fetch: jest.fn(() => Promise.resolve({ isConnected: true })),
+}));
+
+jest.mock('react-native-permissions', () => ({
+  PERMISSIONS: {
+    IOS: {
+      CAMERA: 'ios.permission.CAMERA',
+      PHOTO_LIBRARY: 'ios.permission.PHOTO_LIBRARY',
+    },
+    ANDROID: {
+      CAMERA: 'android.permission.CAMERA',
+      WRITE_EXTERNAL_STORAGE: 'android.permission.WRITE_EXTERNAL_STORAGE',
+    },
+  },
+  RESULTS: {
+    GRANTED: 'granted',
+    DENIED: 'denied',
+  },
+  request: jest.fn(() => Promise.resolve('granted')),
+  check: jest.fn(() => Promise.resolve('granted')),
+}));
+
+// Mock i18n
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key) => key,
+    i18n: {
+      changeLanguage: jest.fn(),
+    },
+  }),
+}));
 
 // Silence console warnings during tests
 const originalWarn = console.warn;
