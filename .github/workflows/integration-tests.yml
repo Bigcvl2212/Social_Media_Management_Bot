@@ -85,9 +85,7 @@ jobs:
     - name: Upload test results
       uses: actions/upload-artifact@v3
 
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+# Removed orphaned cache configuration
           
     - name: Install dependencies
       run: |
