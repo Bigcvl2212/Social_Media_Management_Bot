@@ -1,0 +1,25 @@
+# Configuration for Coding Bots / AI Agents
+
+behavior:
+  # Always provide real, working implementations for any missing or broken code.
+  no_placeholders: true
+  # For each error in CI logs, the bot should:
+  #   - Look up the context of the error in the codebase
+  #   - Write actual, working code that fixes the error
+  #   - Avoid stub functions, empty classes, or "pass" statements unless essential
+  #   - Provide docstrings or comments where clarity is needed
+  fix_errors_iteratively: true
+  # Keep running and fixing errors until the project builds and all tests pass without manual intervention.
+  auto_iterate_until_all_pass: true
+  # The bot should process the entire CI/test output and address all visible issues in a single run, not just the first one.
+  fix_all_found_errors: true
+
+# Optionally, you can add a list of CI log file paths for the bot to monitor
+ci_logs:
+  - ./backend/logs/ci.log
+  - ./frontend/logs/ci.log
+  - ./mobile/logs/ci.log
+
+notes:
+  - "This config is intended for all AI coding bots operating on this repository."
+  - "Bots should use this as the primary behavior policy when proposing or merging code."
