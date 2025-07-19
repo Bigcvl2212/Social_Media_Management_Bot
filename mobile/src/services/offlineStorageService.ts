@@ -1,5 +1,4 @@
 /**
-
  * Offline Storage Service
  * Handles offline content drafting and synchronization
  */
@@ -133,50 +132,9 @@ class OfflineStorageService {
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.error('Failed to get drafts:', error);
-=======
- * Offline Storage Service for Social Media Management Bot
- */
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface PostDraft {
-  id: string;
-  content: string;
-  status: string;
-  createdAt: string;
-}
-
-class OfflineStorageService {
-  private static instance: OfflineStorageService;
-
-  public static getInstance(): OfflineStorageService {
-    if (!OfflineStorageService.instance) {
-      OfflineStorageService.instance = new OfflineStorageService();
-    }
-    return OfflineStorageService.instance;
-  }
-
-  async saveDraft(draft: PostDraft): Promise<void> {
-    try {
-      const drafts = await this.getDrafts();
-      drafts.push(draft);
-      await AsyncStorage.setItem('post_drafts', JSON.stringify(drafts));
-    } catch (error) {
-      console.error('Error saving draft:', error);
-    }
-  }
-
-  async getDrafts(): Promise<PostDraft[]> {
-    try {
-      const draftsString = await AsyncStorage.getItem('post_drafts');
-      return draftsString ? JSON.parse(draftsString) : [];
-    } catch (error) {
-      console.error('Error loading drafts:', error);
-
       return [];
     }
   }
-
 
   /**
    * Get pending drafts (not synced)
@@ -376,7 +334,7 @@ class OfflineStorageService {
   /**
    * Force sync (manual trigger)
    */
-  async forcSync(): Promise<SyncResult> {
+  async forceSync(): Promise<SyncResult> {
     console.log('Force sync triggered');
     return this.syncPendingDrafts();
   }
@@ -422,15 +380,3 @@ class OfflineStorageService {
 // Export singleton instance
 export const offlineStorageService = new OfflineStorageService();
 export default offlineStorageService;
-=======
-  async clearDrafts(): Promise<void> {
-    try {
-      await AsyncStorage.removeItem('post_drafts');
-    } catch (error) {
-      console.error('Error clearing drafts:', error);
-    }
-  }
-}
-
-export default OfflineStorageService;
-
