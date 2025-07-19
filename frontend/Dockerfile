@@ -7,13 +7,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including devDependencies needed for build)
-RUN npm ci
+RUN npm install
 
 # Copy application code
 COPY . .
 
-# Build the application using the full path to next
-RUN ./node_modules/.bin/next build
+# Build the application
+RUN npm run build
 
 # Prune devDependencies for smaller production image
 RUN npm prune --omit=dev
