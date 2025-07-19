@@ -23,6 +23,7 @@
     "react": "19.1.0",
     "react-i18next": "^15.2.0",
     "react-native": "0.80.1",
+    "react-native-chart-kit": "^6.12.0",
     "react-native-gesture-handler": "^2.27.1",
     "react-native-image-picker": "^7.2.0",
     "react-native-localize": "^3.4.2",
@@ -30,6 +31,7 @@
     "react-native-permissions": "^4.1.5",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.13.1",
+    "react-native-svg": "^15.12.0",
     "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
