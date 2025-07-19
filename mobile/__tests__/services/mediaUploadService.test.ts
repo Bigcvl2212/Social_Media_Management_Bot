@@ -62,13 +62,46 @@ jest.mock('../../src/services/api', () => ({
 describe('MediaUploadService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Mock launchCamera to call callback with success response
+    (launchCamera as jest.Mock).mockImplementation((options, callback) => {
+      callback({
+        didCancel: false,
+        errorMessage: null,
+        assets: [{
+          uri: 'file://test.jpg',
+          type: 'image/jpeg',
+          fileName: 'test.jpg',
+          fileSize: 1024,
+          width: 100,
+          height: 100,
+        }],
+      });
+    });
+    
+    // Mock launchImageLibrary to call callback with success response
+    (launchImageLibrary as jest.Mock).mockImplementation((options, callback) => {
+      callback({
+        didCancel: false,
+        errorMessage: null,
+        assets: [{
+          uri: 'file://test.jpg',
+          type: 'image/jpeg',
+          fileName: 'test.jpg',
+          fileSize: 1024,
+          width: 100,
+          height: 100,
+        }],
+      });
+    });
   });
 
   describe('permission handling', () => {
     it('should request camera permission successfully', async () => {
       (request as jest.Mock).mockResolvedValue(RESULTS.GRANTED);
 
-      const result = await mediaUploadService.openCamera({
+      // const result = await mediaUploadService.openCamera({
+      await mediaUploadService.openCamera({
         mediaType: 'photo',
         quality: 0.8,
       });

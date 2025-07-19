@@ -124,7 +124,7 @@ class MediaUploadService {
     return new Promise((resolve, reject) => {
       const cameraOptions: CameraOptions = {
         mediaType: options.mediaType as MediaType,
-        quality: options.quality,
+        quality: (options.quality as any), // Cast to handle type compatibility
         includeBase64: false,
         includeExtra: true,
       };
@@ -165,7 +165,7 @@ class MediaUploadService {
     return new Promise((resolve, reject) => {
       const libraryOptions: ImageLibraryOptions = {
         mediaType: options.mediaType as MediaType,
-        quality: options.quality,
+        quality: (options.quality as any), // Cast to handle type compatibility
         includeBase64: false,
         includeExtra: true,
         selectionLimit: options.multiple ? 10 : 1,

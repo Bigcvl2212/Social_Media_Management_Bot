@@ -7,7 +7,7 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '../../../src/contexts/ThemeContext';
+import { ThemeProvider } from '../../src/contexts/ThemeContext';
 import App from '../../../App';
 
 // Mock all external dependencies

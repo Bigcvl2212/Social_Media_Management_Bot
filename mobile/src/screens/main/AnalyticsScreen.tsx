@@ -13,12 +13,22 @@ import {
   Dimensions,
   RefreshControl,
   Modal,
+  FlatList,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useQuery } from '@tanstack/react-query';
 
 const { width } = Dimensions.get('window');
+const chartConfig = {
+  backgroundGradientFrom: '#ffffff',
+  backgroundGradientTo: '#ffffff',
+  color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+  strokeWidth: 2,
+  barPercentage: 0.5,
+  useShadowColorFromDataset: false,
+};
 
 interface AnalyticsData {
   totalReach: number;
@@ -52,18 +62,40 @@ const TIME_PERIODS = [
   { id: '1y', label: '1 Year' },
 ];
 
+const PLATFORMS = [
+  { id: 'all', label: 'All Platforms', color: '#6b7280' },
+  { id: 'instagram', label: 'Instagram', color: '#E4405F' },
+  { id: 'tiktok', label: 'TikTok', color: '#000000' },
+  { id: 'youtube', label: 'YouTube', color: '#FF0000' },
+  { id: 'twitter', label: 'Twitter/X', color: '#1DA1F2' },
+  { id: 'facebook', label: 'Facebook', color: '#1877F2' },
+  { id: 'linkedin', label: 'LinkedIn', color: '#0A66C2' },
+];
+
+const METRICS = [
+  { id: 'engagement', label: 'Engagement', icon: 'favorite' },
+  { id: 'reach', label: 'Reach', icon: 'visibility' },
+  { id: 'followers', label: 'Followers', icon: 'people' },
+  { id: 'posts', label: 'Posts', icon: 'article' },
+];
+
 export default function AnalyticsScreen() {
   const { theme } = useTheme();
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
+  const [selectedPlatform, setSelectedPlatform] = useState('all');
+  const [selectedMetric, setSelectedMetric] = useState('engagement');
   const [showPeriodModal, setShowPeriodModal] = useState(false);
+  const [showPlatformModal, setShowPlatformModal] = useState(false);
+  const [showMetricModal, setShowMetricModal] = useState(false);
 
   const { data: analyticsData, isLoading, refetch } = useQuery({
-    queryKey: ['analytics', selectedPeriod],
+    queryKey: ['analytics', selectedPeriod, selectedPlatform, selectedMetric],
     queryFn: async (): Promise<AnalyticsData> => {
       // Mock data for demonstration - in real app, this would call API
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      return {
+      // Filter data based on selected platform
+      const baseData = {
         totalReach: 125430,
         totalEngagement: 8640,
         engagementRate: 6.9,
@@ -72,12 +104,16 @@ export default function AnalyticsScreen() {
           { id: '1', title: 'Summer vibes are here! 🌞', engagement: 1250, platform: 'Instagram' },
           { id: '2', title: 'Product launch announcement', engagement: 980, platform: 'LinkedIn' },
           { id: '3', title: 'Behind the scenes video', engagement: 850, platform: 'TikTok' },
+          { id: '4', title: 'Quick tutorial tips', engagement: 740, platform: 'Twitter' },
+          { id: '5', title: 'Team spotlight post', engagement: 620, platform: 'Facebook' },
         ],
         platformStats: [
           { platform: 'Instagram', followers: 15200, engagement: 3420, posts: 45, color: '#E4405F' },
           { platform: 'LinkedIn', followers: 8900, engagement: 2100, posts: 28, color: '#0A66C2' },
           { platform: 'TikTok', followers: 22100, engagement: 4200, posts: 38, color: '#000000' },
           { platform: 'Twitter', followers: 12600, engagement: 1800, posts: 52, color: '#1DA1F2' },
+          { platform: 'Facebook', followers: 9800, engagement: 1560, posts: 32, color: '#1877F2' },
+          { platform: 'YouTube', followers: 5400, engagement: 890, posts: 15, color: '#FF0000' },
         ],
         weeklyData: [
           { day: 'Mon', reach: 18500, engagement: 1200 },
@@ -89,6 +125,22 @@ export default function AnalyticsScreen() {
           { day: 'Sun', reach: 14200, engagement: 850 },
         ],
       };
+
+      // Apply platform filter
+      if (selectedPlatform !== 'all') {
+        const platformStats = baseData.platformStats.filter(p => p.platform.toLowerCase() === selectedPlatform);
+        const topPosts = baseData.topPosts.filter(p => p.platform.toLowerCase() === selectedPlatform);
+        
+        return {
+          ...baseData,
+          platformStats,
+          topPosts,
+          totalReach: platformStats.reduce((sum, p) => sum + p.followers, 0),
+          totalEngagement: platformStats.reduce((sum, p) => sum + p.engagement, 0),
+        };
+      }
+      
+      return baseData;
     },
   });
 
@@ -97,6 +149,202 @@ export default function AnalyticsScreen() {
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
   };
+
+  // Prepare chart data
+  const getLineChartData = () => {
+    if (!analyticsData?.weeklyData) return null;
+    
+    return {
+      labels: analyticsData.weeklyData.map(d => d.day),
+      datasets: [
+        {
+          data: analyticsData.weeklyData.map(d => selectedMetric === 'reach' ? d.reach : d.engagement),
+          color: () => theme.colors.primary,
+          strokeWidth: 2,
+        },
+      ],
+    };
+  };
+
+  const getPieChartData = () => {
+    if (!analyticsData?.platformStats) return [];
+    
+    return analyticsData.platformStats.map(platform => ({
+      name: platform.platform,
+      population: selectedMetric === 'followers' ? platform.followers : 
+                 selectedMetric === 'engagement' ? platform.engagement :
+                 selectedMetric === 'posts' ? platform.posts : platform.followers,
+      color: platform.color,
+      legendFontColor: theme.colors.text,
+      legendFontSize: 12,
+    }));
+  };
+
+  const getBarChartData = () => {
+    if (!analyticsData?.platformStats) return null;
+    
+    return {
+      labels: analyticsData.platformStats.map(p => p.platform.substring(0, 3)),
+      datasets: [
+        {
+          data: analyticsData.platformStats.map(p => 
+            selectedMetric === 'followers' ? p.followers : 
+            selectedMetric === 'engagement' ? p.engagement :
+            selectedMetric === 'posts' ? p.posts : p.followers
+          ),
+        },
+      ],
+    };
+  };
+
+  const renderFilters = () => (
+    <View style={styles.filtersContainer}>
+      <TouchableOpacity
+        style={[styles.filterButton, { backgroundColor: theme.colors.surface }]}
+        onPress={() => setShowPeriodModal(true)}
+      >
+        <Text style={[styles.filterText, { color: theme.colors.text }]}>
+          {TIME_PERIODS.find(p => p.id === selectedPeriod)?.label}
+        </Text>
+        <Icon name="keyboard-arrow-down" size={20} color={theme.colors.textSecondary} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.filterButton, { backgroundColor: theme.colors.surface }]}
+        onPress={() => setShowPlatformModal(true)}
+      >
+        <Text style={[styles.filterText, { color: theme.colors.text }]}>
+          {PLATFORMS.find(p => p.id === selectedPlatform)?.label}
+        </Text>
+        <Icon name="keyboard-arrow-down" size={20} color={theme.colors.textSecondary} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.filterButton, { backgroundColor: theme.colors.surface }]}
+        onPress={() => setShowMetricModal(true)}
+      >
+        <Text style={[styles.filterText, { color: theme.colors.text }]}>
+          {METRICS.find(m => m.id === selectedMetric)?.label}
+        </Text>
+        <Icon name="keyboard-arrow-down" size={20} color={theme.colors.textSecondary} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderLineChart = () => {
+    const chartData = getLineChartData();
+    if (!chartData) return null;
+
+    return (
+      <View style={[styles.chartSection, { backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.chartTitle, { color: theme.colors.text }]}>
+          {selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)} Trend
+        </Text>
+        <LineChart
+          data={chartData}
+          width={width - 40}
+          height={220}
+          chartConfig={{
+            ...chartConfig,
+            backgroundGradientFrom: theme.colors.surface,
+            backgroundGradientTo: theme.colors.surface,
+            color: (opacity = 1) => theme.colors.primary + Math.round(opacity * 255).toString(16),
+          }}
+          bezier
+          style={styles.chart}
+        />
+      </View>
+    );
+  };
+
+  const renderPieChart = () => {
+    const chartData = getPieChartData();
+    if (!chartData.length) return null;
+
+    return (
+      <View style={[styles.chartSection, { backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.chartTitle, { color: theme.colors.text }]}>
+          Platform Distribution - {selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)}
+        </Text>
+        <PieChart
+          data={chartData}
+          width={width - 40}
+          height={220}
+          chartConfig={chartConfig}
+          accessor="population"
+          backgroundColor="transparent"
+          paddingLeft="15"
+          style={styles.chart}
+        />
+      </View>
+    );
+  };
+
+  const renderBarChart = () => {
+    const chartData = getBarChartData();
+    if (!chartData) return null;
+
+    return (
+      <View style={[styles.chartSection, { backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.chartTitle, { color: theme.colors.text }]}>
+          Platform Comparison - {selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)}
+        </Text>
+        <BarChart
+          data={chartData}
+          width={width - 40}
+          height={220}
+          chartConfig={{
+            ...chartConfig,
+            backgroundGradientFrom: theme.colors.surface,
+            backgroundGradientTo: theme.colors.surface,
+            color: (opacity = 1) => theme.colors.primary + Math.round(opacity * 255).toString(16),
+          }}
+          style={styles.chart}
+        />
+      </View>
+    );
+  };
+
+  const renderFilterModal = (
+    title: string,
+    data: Array<{id: string, label: string}>,
+    selectedValue: string,
+    onSelect: (value: string) => void,
+    visible: boolean,
+    onClose: () => void
+  ) => (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+          <TouchableOpacity onPress={onClose}>
+            <Text style={[styles.modalCancel, { color: theme.colors.primary }]}>Cancel</Text>
+          </TouchableOpacity>
+          <Text style={[styles.modalTitle, { color: theme.colors.text }]}>{title}</Text>
+          <View style={styles.modalSpacer} />
+        </View>
+        <FlatList
+          data={data}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.modalItem, { borderBottomColor: theme.colors.border }]}
+              onPress={() => {
+                onSelect(item.id);
+                onClose();
+              }}
+            >
+              <Text style={[styles.modalItemText, { color: theme.colors.text }]}>
+                {item.label}
+              </Text>
+              {selectedValue === item.id && (
+                <Icon name="check" size={20} color={theme.colors.primary} />
+              )}
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+    </Modal>
+  );
 
   const renderOverviewCards = () => (
     <View style={styles.overviewContainer}>
@@ -192,37 +440,6 @@ export default function AnalyticsScreen() {
     </View>
   );
 
-  const renderSimpleChart = () => (
-    <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
-      <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-        Weekly Performance
-      </Text>
-      <View style={styles.chartContainer}>
-        {analyticsData?.weeklyData.map((day) => {
-          const maxReach = Math.max(...(analyticsData?.weeklyData.map(d => d.reach) || [0]));
-          const height = (day.reach / maxReach) * 100;
-          
-          return (
-            <View key={day.day} style={styles.chartBar}>
-              <View 
-                style={[
-                  styles.chartBarFill, 
-                  { 
-                    height: `${height}%`,
-                    backgroundColor: theme.colors.primary,
-                  }
-                ]} 
-              />
-              <Text style={[styles.chartLabel, { color: theme.colors.textSecondary }]}>
-                {day.day}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-    </View>
-  );
-
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
@@ -254,15 +471,46 @@ export default function AnalyticsScreen() {
           />
         }
       >
+        {renderFilters()}
         {renderOverviewCards()}
-        {renderSimpleChart()}
+        {renderLineChart()}
+        {renderBarChart()}
+        {renderPieChart()}
         {renderPlatformStats()}
         {renderTopPosts()}
       </ScrollView>
 
-      {/* Period Selection Modal */}
+      {/* Filter Modals */}
+      {renderFilterModal(
+        'Select Time Period',
+        TIME_PERIODS,
+        selectedPeriod,
+        setSelectedPeriod,
+        showPeriodModal,
+        () => setShowPeriodModal(false)
+      )}
+
+      {renderFilterModal(
+        'Select Platform',
+        PLATFORMS,
+        selectedPlatform,
+        setSelectedPlatform,
+        showPlatformModal,
+        () => setShowPlatformModal(false)
+      )}
+
+      {renderFilterModal(
+        'Select Metric',
+        METRICS,
+        selectedMetric,
+        setSelectedMetric,
+        showMetricModal,
+        () => setShowMetricModal(false)
+      )}
+
+      {/* Legacy Period Selection Modal - kept for compatibility */}
       <Modal
-        visible={showPeriodModal}
+        visible={false} // disabled since we use the new filter modal
         transparent={true}
         animationType="fade"
         onRequestClose={() => setShowPeriodModal(false)}
@@ -490,6 +738,68 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   periodOptionText: {
+    fontSize: 16,
+  },
+  // New styles for enhanced analytics
+  filtersContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 8,
+  },
+  filterButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  filterText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  chartSection: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 12,
+    padding: 16,
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  chart: {
+    borderRadius: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalCancel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  modalSpacer: {
+    width: 60,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+  },
+  modalItemText: {
     fontSize: 16,
   },
 });

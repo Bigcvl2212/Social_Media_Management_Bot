@@ -22,6 +22,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { PlatformType, ContentType } from '../../types';
 import mediaUploadService, { MediaFile } from '../../services/mediaUploadService';
 import offlineStorageService from '../../services/offlineStorageService';
+import aiContentService from '../../services/aiContentService';
 
 const PLATFORMS: { id: PlatformType; name: string; icon: string; color: string }[] = [
   { id: 'instagram', name: 'Instagram', icon: 'camera-alt', color: '#E4405F' },
@@ -54,7 +55,18 @@ export default function CreatePostScreen() {
   // UI state
   const [showAIModal, setShowAIModal] = useState(false);
   const [showContentTypeModal, setShowContentTypeModal] = useState(false);
+  // AI generation state
   const [aiPrompt, setAiPrompt] = useState('');
+  const [selectedAIFeature, setSelectedAIFeature] = useState<'content' | 'hashtags' | 'image' | 'ideas'>('content');
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
+
+  const AI_FEATURES = [
+    { id: 'content' as const, label: 'Generate Content', icon: 'article', description: 'Create engaging post content' },
+    { id: 'hashtags' as const, label: 'Generate Hashtags', icon: 'tag', description: 'Find relevant hashtags' },
+    { id: 'image' as const, label: 'Generate Image', icon: 'image', description: 'Create AI-generated images' },
+    { id: 'ideas' as const, label: 'Content Ideas', icon: 'lightbulb', description: 'Get content inspiration' },
+  ];
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -81,26 +93,75 @@ export default function CreatePostScreen() {
 
     setIsGeneratingAI(true);
     try {
-      // Mock AI generation for demo
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockResult = {
-        title: 'AI Generated Title',
-        caption: `Here's an AI-generated caption based on your prompt: "${aiPrompt}". This would normally be generated using advanced AI models.`,
-        hashtags: ['#AI', '#Generated', '#Content'],
-        suggestions: ['Consider adding more visual elements', 'Try a different tone for better engagement'],
-      };
+      switch (selectedAIFeature) {
+        case 'content':
+          const contentResult = await aiContentService.generateContent(aiPrompt, selectedPlatforms, contentType);
+          setTitle(contentResult.title || title);
+          setCaption(contentResult.content);
+          break;
 
-      setTitle(mockResult.title);
-      setCaption(mockResult.caption);
+        case 'hashtags':
+          const hashtags = await aiContentService.generateHashtags(aiPrompt, selectedPlatforms[0] || 'instagram', 10);
+          setGeneratedHashtags(hashtags);
+          // Append hashtags to caption
+          if (hashtags.length > 0) {
+            const hashtagString = '\n\n' + hashtags.map(tag => `#${tag}`).join(' ');
+            setCaption(prev => prev + hashtagString);
+          }
+          break;
+
+        case 'image':
+          const imageResult = await aiContentService.generateImage(aiPrompt, 'square');
+          if (imageResult.image_url) {
+            // Add the generated image to media files
+            const mockMediaFile: MediaFile = {
+              uri: imageResult.image_url,
+              type: 'image/jpeg',
+              filename: 'ai-generated-image.jpg',
+              fileSize: 0,
+              width: 512,
+              height: 512,
+            };
+            setMediaFiles(prev => [...prev, mockMediaFile]);
+            setUploadedUrls(prev => [...prev, imageResult.image_url]);
+          }
+          break;
+
+        case 'ideas':
+          const ideas = await aiContentService.getContentIdeas(selectedPlatforms.length > 0 ? selectedPlatforms : ['instagram'], contentType);
+          const ideaTexts = ideas.map(idea => typeof idea === 'string' ? idea : idea.title || idea.content || '');
+          setAiSuggestions(ideaTexts);
+          break;
+      }
+
       setShowAIModal(false);
       setAiPrompt('');
       
-      Alert.alert('Success', 'AI content generated successfully!');
+      Alert.alert('Success', `AI ${selectedAIFeature} generated successfully!`);
     } catch (error) {
-      Alert.alert('Error', 'Failed to generate AI content. Please try again.');
+      console.error('AI generation error:', error);
+      Alert.alert('Error', `Failed to generate AI ${selectedAIFeature}. Please try again.`);
     } finally {
       setIsGeneratingAI(false);
+    }
+  };
+
+  const handleApplySuggestion = (suggestion: string) => {
+    setCaption(suggestion);
+    setAiSuggestions([]);
+  };
+
+  const handleGenerateHashtagsOnly = async () => {
+    if (!caption.trim()) {
+      Alert.alert('Error', 'Please enter some content first to generate relevant hashtags');
+      return;
+    }
+
+    try {
+      const hashtags = await aiContentService.generateHashtags(caption, [selectedPlatforms[0] || 'instagram'], 10);
+      setGeneratedHashtags(hashtags);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to generate hashtags');
     }
   };
 
@@ -332,6 +393,73 @@ export default function CreatePostScreen() {
             multiline
             numberOfLines={4}
           />
+          
+          {/* AI Suggestions Panel */}
+          {aiSuggestions.length > 0 && (
+            <View style={[styles.suggestionsPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <Text style={[styles.suggestionsTitle, { color: theme.colors.text }]}>
+                AI Content Ideas:
+              </Text>
+              {aiSuggestions.map((suggestion, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.suggestionItem, { borderColor: theme.colors.border }]}
+                  onPress={() => handleApplySuggestion(suggestion)}
+                >
+                  <Text style={[styles.suggestionText, { color: theme.colors.text }]} numberOfLines={2}>
+                    {suggestion}
+                  </Text>
+                  <Icon name="arrow-forward" size={16} color={theme.colors.primary} />
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[styles.dismissButton, { backgroundColor: theme.colors.error + '20' }]}
+                onPress={() => setAiSuggestions([])}
+              >
+                <Text style={[styles.dismissButtonText, { color: theme.colors.error }]}>
+                  Dismiss Suggestions
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Hashtags Management */}
+          <View style={styles.hashtagsSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionSubTitle, { color: theme.colors.text }]}>
+                Hashtags
+              </Text>
+              <TouchableOpacity
+                style={[styles.generateHashtagsButton, { backgroundColor: theme.colors.primary + '20' }]}
+                onPress={handleGenerateHashtagsOnly}
+              >
+                <Icon name="tag" size={14} color={theme.colors.primary} />
+                <Text style={[styles.generateHashtagsText, { color: theme.colors.primary }]}>
+                  Generate
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            {generatedHashtags.length > 0 && (
+              <View style={styles.hashtagsContainer}>
+                {generatedHashtags.map((hashtag, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.hashtagChip, { backgroundColor: theme.colors.primary + '20' }]}
+                    onPress={() => {
+                      const hashtagText = `#${hashtag} `;
+                      setCaption(prev => prev + hashtagText);
+                    }}
+                  >
+                    <Text style={[styles.hashtagText, { color: theme.colors.primary }]}>
+                      #{hashtag}
+                    </Text>
+                    <Icon name="add" size={14} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Platform Selector */}
@@ -392,21 +520,68 @@ export default function CreatePostScreen() {
           </View>
           
           <View style={styles.modalContent}>
+            {/* AI Feature Selection */}
             <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-              Describe what you want to post about:
+              Choose AI Feature:
+            </Text>
+            <View style={styles.aiFeatureGrid}>
+              {AI_FEATURES.map((feature) => (
+                <TouchableOpacity
+                  key={feature.id}
+                  style={[
+                    styles.aiFeatureCard,
+                    { 
+                      backgroundColor: selectedAIFeature === feature.id ? theme.colors.primary + '20' : theme.colors.surface,
+                      borderColor: selectedAIFeature === feature.id ? theme.colors.primary : theme.colors.border,
+                    }
+                  ]}
+                  onPress={() => setSelectedAIFeature(feature.id)}
+                >
+                  <Icon 
+                    name={feature.icon} 
+                    size={24} 
+                    color={selectedAIFeature === feature.id ? theme.colors.primary : theme.colors.textSecondary} 
+                  />
+                  <Text style={[
+                    styles.aiFeatureLabel, 
+                    { color: selectedAIFeature === feature.id ? theme.colors.primary : theme.colors.text }
+                  ]}>
+                    {feature.label}
+                  </Text>
+                  <Text style={[styles.aiFeatureDescription, { color: theme.colors.textSecondary }]}>
+                    {feature.description}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.inputLabel, styles.aiPromptLabel, { color: theme.colors.text }]}>
+              {selectedAIFeature === 'content' ? 'Describe what you want to post about:' :
+               selectedAIFeature === 'hashtags' ? 'Describe your content for hashtag generation:' :
+               selectedAIFeature === 'image' ? 'Describe the image you want to generate:' :
+               'What type of content ideas do you need?'}
             </Text>
             <TextInput
               style={[styles.textArea, { backgroundColor: theme.colors.surface, color: theme.colors.text, borderColor: theme.colors.border }]}
               value={aiPrompt}
               onChangeText={setAiPrompt}
-              placeholder="e.g., A motivational post about productivity tips for entrepreneurs"
+              placeholder={
+                selectedAIFeature === 'content' ? 'e.g., A motivational post about productivity tips for entrepreneurs' :
+                selectedAIFeature === 'hashtags' ? 'e.g., Healthy breakfast recipe with avocado' :
+                selectedAIFeature === 'image' ? 'e.g., A minimalist workspace with laptop and coffee' :
+                'e.g., Content ideas for a fitness brand targeting millennials'
+              }
               placeholderTextColor={theme.colors.textSecondary}
               multiline
               numberOfLines={3}
             />
             
             <TouchableOpacity
-              style={[styles.generateButton, { backgroundColor: theme.colors.primary }]}
+              style={[
+                styles.generateButton, 
+                { backgroundColor: theme.colors.primary },
+                (isGeneratingAI || !aiPrompt.trim()) && styles.disabledButton
+              ]}
               onPress={handleGenerateAIContent}
               disabled={isGeneratingAI || !aiPrompt.trim()}
             >
@@ -415,7 +590,9 @@ export default function CreatePostScreen() {
               ) : (
                 <>
                   <Icon name="auto-awesome" size={20} color="#fff" />
-                  <Text style={styles.generateButtonText}>Generate Content</Text>
+                  <Text style={styles.generateButtonText}>
+                    Generate {AI_FEATURES.find(f => f.id === selectedAIFeature)?.label}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -672,5 +849,112 @@ const styles = StyleSheet.create({
   },
   whiteText: {
     color: '#fff',
+  },
+  // Enhanced AI UI styles
+  suggestionsPanel: {
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  suggestionsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 0.5,
+    marginBottom: 8,
+    borderRadius: 6,
+  },
+  suggestionText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  dismissButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  dismissButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  hashtagsSection: {
+    marginTop: 16,
+  },
+  sectionSubTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  generateHashtagsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  generateHashtagsText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  hashtagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  hashtagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  hashtagText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  aiFeatureGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  aiFeatureCard: {
+    width: '47%',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: 'center',
+    minHeight: 80,
+    justifyContent: 'center',
+  },
+  aiFeatureLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  aiFeatureDescription: {
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  aiPromptLabel: {
+    marginTop: 20,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });
