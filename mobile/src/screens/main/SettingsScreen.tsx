@@ -19,7 +19,6 @@ import { useTranslation } from 'react-i18next';
 import { useTheme, ThemeMode } from '../contexts/ThemeContext';
 import { AVAILABLE_LANGUAGES, saveLanguage } from '../i18n';
 import { useAuth } from '../hooks/useAuth';
-import pushNotificationService from '../services/pushNotificationService';
 import offlineStorageService from '../services/offlineStorageService';
 
 interface SettingsSection {

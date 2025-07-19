@@ -12,17 +12,14 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  Switch,
   Modal,
   FlatList,
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { PlatformType, ContentType } from '../../types';
-import aiContentService from '../../services/aiContentService';
 import mediaUploadService, { MediaFile } from '../../services/mediaUploadService';
 import offlineStorageService from '../../services/offlineStorageService';
 
@@ -43,7 +40,6 @@ const CONTENT_TYPES: { id: ContentType; name: string; icon: string }[] = [
 ];
 
 export default function CreatePostScreen() {
-  const { t } = useTranslation();
   const { theme } = useTheme();
   
   // Form state
@@ -157,7 +153,7 @@ export default function CreatePostScreen() {
 
     setIsSaving(true);
     try {
-      const draftId = offlineStorageService.saveDraftOffline({
+      offlineStorageService.saveDraftOffline({
         title: title.trim(),
         caption: caption.trim(),
         content_type: contentType,
@@ -222,11 +218,9 @@ export default function CreatePostScreen() {
             <Text 
               style={[
                 styles.platformText, 
-                { 
-                  color: selectedPlatforms.includes(platform.id) 
-                    ? '#fff' 
-                    : theme.colors.text 
-                }
+                selectedPlatforms.includes(platform.id) 
+                  ? styles.platformTextSelected
+                  : { color: theme.colors.text }
               ]}
             >
               {platform.name}
@@ -370,7 +364,7 @@ export default function CreatePostScreen() {
             onPress={() => Alert.alert('Coming Soon', 'Publishing feature will be available soon!')}
           >
             <Icon name="publish" size={20} color="#fff" />
-            <Text style={[styles.actionButtonText, { color: '#fff' }]}>
+            <Text style={[styles.actionButtonText, styles.whiteText]}>
               Publish Now
             </Text>
           </TouchableOpacity>
@@ -672,5 +666,11 @@ const styles = StyleSheet.create({
   contentTypeText: {
     flex: 1,
     fontSize: 16,
+  },
+  platformTextSelected: {
+    color: '#fff',
+  },
+  whiteText: {
+    color: '#fff',
   },
 });

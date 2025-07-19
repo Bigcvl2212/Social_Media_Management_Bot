@@ -27,6 +27,33 @@ import { useTheme } from '../contexts/ThemeContext';
 const RootStack = createStackNavigator<RootStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 
+// Tab bar icon renderer
+const renderTabBarIcon = (route: any, color: string, size: number) => {
+  let iconName = '';
+
+  switch (route.name) {
+    case 'Dashboard':
+      iconName = 'dashboard';
+      break;
+    case 'Calendar':
+      iconName = 'event';
+      break;
+    case 'Create':
+      iconName = 'add-circle';
+      break;
+    case 'Analytics':
+      iconName = 'analytics';
+      break;
+    case 'Profile':
+      iconName = 'person';
+      break;
+    default:
+      iconName = 'help';
+  }
+
+  return <Icon name={iconName} size={size} color={color} />;
+};
+
 // Main Tab Navigator
 function MainTabNavigator() {
   const { theme } = useTheme();
@@ -42,31 +69,7 @@ function MainTabNavigator() {
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textSecondary,
-        tabBarIcon: ({ color, size }) => {
-          let iconName = '';
-
-          switch (route.name) {
-            case 'Dashboard':
-              iconName = 'dashboard';
-              break;
-            case 'Calendar':
-              iconName = 'event';
-              break;
-            case 'Create':
-              iconName = 'add-circle';
-              break;
-            case 'Analytics':
-              iconName = 'analytics';
-              break;
-            case 'Profile':
-              iconName = 'person';
-              break;
-            default:
-              iconName = 'help';
-          }
-
-          return <Icon name={iconName} size={size} color={color} />;
-        },
+        tabBarIcon: ({ color, size }) => renderTabBarIcon(route, color, size),
       })}
     >
       <MainTab.Screen 

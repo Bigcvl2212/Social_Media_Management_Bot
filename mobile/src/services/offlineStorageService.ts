@@ -5,7 +5,7 @@
 
 import { MMKV } from 'react-native-mmkv';
 import NetInfo from '@react-native-community/netinfo';
-import { ContentCreate, Content, PostStatus } from '../types';
+import { ContentCreate, Content } from '../types';
 import apiClient, { API_ENDPOINTS } from './api';
 
 export interface OfflineDraft extends ContentCreate {
