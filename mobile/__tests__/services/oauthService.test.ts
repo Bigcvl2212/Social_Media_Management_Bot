@@ -4,8 +4,8 @@
  */
 
 import { MMKV } from 'react-native-mmkv';
-import oauthService from '../../../src/services/oauthService';
-import { PlatformType } from '../../../src/types';
+import oauthService from '../../src/services/oauthService';
+import { PlatformType } from '../../src/types';
 
 // Mock MMKV
 jest.mock('react-native-mmkv', () => ({
@@ -30,7 +30,7 @@ jest.mock('react-native', () => ({
 }));
 
 // Mock API client
-jest.mock('../../../src/services/api', () => ({
+jest.mock('../../src/services/api', () => ({
   post: jest.fn(),
   get: jest.fn(),
 }));
