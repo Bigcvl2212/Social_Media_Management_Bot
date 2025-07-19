@@ -9,11 +9,18 @@ import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/asy
 // Setup testing environment
 global.__DEV__ = true;
 
-// Mock MMKV first before any other imports
+// Mock MMKV globally in jest setup
+const mockGetString = jest.fn();
+const mockSet = jest.fn();
+
+// Make mock functions available globally
+global.mockGetString = mockGetString;
+global.mockSet = mockSet;
+
 jest.mock('react-native-mmkv', () => ({
-  MMKV: jest.fn().mockImplementation(() => ({
-    getString: jest.fn(),
-    set: jest.fn(),
+  MMKV: jest.fn(() => ({
+    getString: mockGetString,
+    set: mockSet,
   })),
 }));
 

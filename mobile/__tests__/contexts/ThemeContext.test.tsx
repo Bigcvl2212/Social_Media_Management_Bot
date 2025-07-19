@@ -8,11 +8,10 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { useColorScheme } from 'react-native';
 import { Text, TouchableOpacity } from 'react-native';
 import { ThemeProvider, useTheme } from '../../src/contexts/ThemeContext';
-import { MMKV } from 'react-native-mmkv';
 
-// Access the mocked functions
-const mockGetString = jest.fn();
-const mockSet = jest.fn();
+// Access the globally mocked functions
+const mockGetString = (global as any).mockGetString;
+const mockSet = (global as any).mockSet;
 
 // Test component that uses theme
 const TestComponent = () => {
@@ -39,13 +38,6 @@ const TestComponent = () => {
 describe('ThemeContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
-    // Setup the MMKV mock implementation for this test
-    (MMKV as jest.Mock).mockImplementation(() => ({
-      getString: mockGetString,
-      set: mockSet,
-    }));
-    
     mockGetString.mockReturnValue(null); // Default return value
     (useColorScheme as jest.Mock).mockReturnValue('light');
   });
@@ -65,6 +57,8 @@ describe('ThemeContext', () => {
   });
 
   it('should use stored theme preference', () => {
+    // Clear any previous calls and set up fresh mock
+    jest.clearAllMocks();
     mockGetString.mockReturnValue('dark');
     
     const { getByTestId } = render(
@@ -124,6 +118,8 @@ describe('ThemeContext', () => {
   });
 
   it('should provide correct dark theme colors', () => {
+    // Clear any previous calls and set up fresh mock
+    jest.clearAllMocks();
     mockGetString.mockReturnValue('dark');
     
     const { getByTestId } = render(

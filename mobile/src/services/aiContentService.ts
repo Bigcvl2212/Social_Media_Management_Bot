@@ -1,7 +1,6 @@
 /**
-
  * AI Content Generation Service
- * Integrates with backend AI services for content creation
+ * State-of-the-art AI services for viral content creation and social media management
  */
 
 import apiClient from './api';
@@ -16,6 +15,7 @@ export interface AIGenerateRequest {
   includeHashtags?: boolean;
   includeEmojis?: boolean;
   language?: string;
+  viralOptimization?: boolean;
 }
 
 export interface AIGenerateResponse {
@@ -23,6 +23,8 @@ export interface AIGenerateResponse {
   caption: string;
   hashtags: string[];
   suggestions: string[];
+  viralScore?: number;
+  engagementPrediction?: number;
 }
 
 export interface AIImageGenerateRequest {
@@ -36,6 +38,109 @@ export interface AIImageGenerateResponse {
   imageUrl: string;
   prompt: string;
   style: string;
+}
+
+// Enhanced Video AI Editing Interfaces
+export interface VideoEditRequest {
+  videoUrl: string;
+  editStyle: 'viral' | 'educational' | 'entertainment' | 'promotional' | 'storytelling';
+  targetDuration?: number;
+  targetPlatform: PlatformType[];
+  viralElements?: boolean;
+  musicSync?: boolean;
+  addCaptions?: boolean;
+  addEffects?: boolean;
+}
+
+export interface VideoEditResponse {
+  editedVideoUrl: string;
+  thumbnailUrl: string;
+  editingReport: {
+    cuts: number;
+    effectsApplied: string[];
+    viralScore: number;
+    estimatedEngagement: number;
+    recommendations: string[];
+  };
+  processingTime: number;
+}
+
+export interface AutonomousContentRequest {
+  contentLibraryUrl: string;
+  frequency: 'daily' | 'weekly' | 'bi-weekly';
+  platforms: PlatformType[];
+  contentTypes: ContentType[];
+  brandGuidelines?: {
+    tone: string;
+    colors: string[];
+    logo: string;
+    restrictions: string[];
+  };
+}
+
+export interface AutonomousContentResponse {
+  contentPlan: {
+    date: string;
+    platform: PlatformType;
+    contentType: ContentType;
+    title: string;
+    content: string;
+    media: string[];
+    scheduledTime: string;
+    viralPotential: number;
+  }[];
+  nextUpdate: string;
+  processingStatus: 'active' | 'pending' | 'error';
+}
+
+export interface SocialMonitoringRequest {
+  platforms: PlatformType[];
+  keywords?: string[];
+  autoReply?: boolean;
+  replyTone?: 'professional' | 'friendly' | 'humorous' | 'supportive';
+  responseTime?: number; // in minutes
+}
+
+export interface SocialMonitoringResponse {
+  interactions: {
+    id: string;
+    platform: PlatformType;
+    type: 'comment' | 'message' | 'mention' | 'review';
+    author: string;
+    content: string;
+    timestamp: string;
+    sentiment: 'positive' | 'neutral' | 'negative';
+    priority: 'high' | 'medium' | 'low';
+    suggestedReply?: string;
+    autoReplied?: boolean;
+  }[];
+  analytics: {
+    totalInteractions: number;
+    sentimentBreakdown: Record<string, number>;
+    responseRate: number;
+    avgResponseTime: number;
+    engagementGrowth: number;
+  };
+}
+
+export interface GrowthAnalysisResponse {
+  overallScore: number;
+  insights: {
+    category: string;
+    score: number;
+    recommendations: string[];
+    priority: 'critical' | 'high' | 'medium' | 'low';
+  }[];
+  competitorAnalysis: {
+    competitor: string;
+    comparison: string;
+    opportunities: string[];
+  }[];
+  actionPlan: {
+    immediate: string[];
+    shortTerm: string[];
+    longTerm: string[];
+  };
 }
 
 export interface ContentIdea {
@@ -307,6 +412,184 @@ class AIContentService {
       throw new Error('Failed to get personalized recommendations. Please try again.');
     }
   }
+
+  // ===== ADVANCED AI FEATURES =====
+  
+  /**
+   * Advanced Video AI Editing for Viral Content
+   * State-of-the-art video editing with human-level quality
+   */
+  async editVideoForViral(request: VideoEditRequest): Promise<VideoEditResponse> {
+    try {
+      const response = await apiClient.post('/ai/video-edit-viral', request);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to edit video for viral content:', error);
+      throw new Error('Failed to edit video. Please try again.');
+    }
+  }
+
+  /**
+   * Autonomous Content Creation from User Content Library
+   * Processes weekly updated content files to create new content
+   */
+  async setupAutonomousContent(request: AutonomousContentRequest): Promise<AutonomousContentResponse> {
+    try {
+      const response = await apiClient.post('/ai/autonomous-content-setup', request);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to setup autonomous content:', error);
+      throw new Error('Failed to setup autonomous content creation. Please try again.');
+    }
+  }
+
+  /**
+   * Get Autonomous Content Status and Next Batch
+   */
+  async getAutonomousContentStatus(): Promise<AutonomousContentResponse> {
+    try {
+      const response = await apiClient.get('/ai/autonomous-content-status');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get autonomous content status:', error);
+      throw new Error('Failed to get autonomous content status. Please try again.');
+    }
+  }
+
+  /**
+   * Social Media Monitoring and Autonomous Interaction
+   */
+  async setupSocialMonitoring(request: SocialMonitoringRequest): Promise<{ success: boolean; monitoringId: string }> {
+    try {
+      const response = await apiClient.post('/ai/social-monitoring-setup', request);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to setup social monitoring:', error);
+      throw new Error('Failed to setup social monitoring. Please try again.');
+    }
+  }
+
+  /**
+   * Get Social Media Interactions and Analytics
+   */
+  async getSocialMonitoring(): Promise<SocialMonitoringResponse> {
+    try {
+      const response = await apiClient.get('/ai/social-monitoring');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get social monitoring data:', error);
+      throw new Error('Failed to get social monitoring data. Please try again.');
+    }
+  }
+
+  /**
+   * Reply to Social Media Interaction
+   */
+  async replyToInteraction(interactionId: string, reply: string, auto: boolean = false): Promise<{ success: boolean }> {
+    try {
+      const response = await apiClient.post('/ai/social-reply', {
+        interactionId,
+        reply,
+        auto
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to reply to interaction:', error);
+      throw new Error('Failed to send reply. Please try again.');
+    }
+  }
+
+  /**
+   * Comprehensive Growth Analysis and Recommendations
+   */
+  async getGrowthAnalysis(): Promise<GrowthAnalysisResponse> {
+    try {
+      const response = await apiClient.get('/ai/growth-analysis');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get growth analysis:', error);
+      throw new Error('Failed to get growth analysis. Please try again.');
+    }
+  }
+
+  /**
+   * AI-Powered Multi-Format Content Creation
+   * Creates content across video, picture, graphic, post, forum formats
+   */
+  async createMultiFormatContent(
+    topic: string,
+    formats: ('video' | 'image' | 'graphic' | 'post' | 'forum')[],
+    platforms: PlatformType[],
+    viralOptimization: boolean = true
+  ): Promise<{
+    video?: { url: string; thumbnail: string; duration: number };
+    image?: { url: string; alt: string };
+    graphic?: { url: string; type: string };
+    post?: { title: string; content: string; hashtags: string[] };
+    forum?: { title: string; content: string; category: string };
+    viralScore: number;
+  }> {
+    try {
+      const response = await apiClient.post('/ai/multi-format-content', {
+        topic,
+        formats,
+        platforms,
+        viralOptimization
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create multi-format content:', error);
+      throw new Error('Failed to create multi-format content. Please try again.');
+    }
+  }
+
+  /**
+   * Batch Process User Content Library for Autonomous Creation
+   */
+  async processContentLibrary(libraryPath: string): Promise<{
+    processedFiles: number;
+    contentGenerated: number;
+    nextProcessing: string;
+    insights: string[];
+  }> {
+    try {
+      const response = await apiClient.post('/ai/process-content-library', {
+        libraryPath
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to process content library:', error);
+      throw new Error('Failed to process content library. Please try again.');
+    }
+  }
+
+  /**
+   * Real-time Viral Content Optimization
+   */
+  async optimizeForViral(
+    content: string,
+    contentType: ContentType,
+    platform: PlatformType
+  ): Promise<{
+    optimizedContent: string;
+    viralScore: number;
+    improvements: string[];
+    hashtags: string[];
+    postingTime: string;
+  }> {
+    try {
+      const response = await apiClient.post('/ai/viral-optimization', {
+        content,
+        contentType,
+        platform
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to optimize content for viral:', error);
+      throw new Error('Failed to optimize content. Please try again.');
+    }
+  }
+}
 }
 
 // Export singleton instance
