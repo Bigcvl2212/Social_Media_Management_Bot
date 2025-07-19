@@ -1,22 +1,29 @@
 """
-Advanced content management routes with AI-powered features
+Advanced content management routes with AI-powered features and CRUD operations
 """
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
+import math
 
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.models.user import User
-from app.models.content import ContentType
+from app.models.content import ContentType, ContentStatus, ScheduleStatus
 from app.models.social_account import SocialPlatform as Platform
+from app.services.content_service import ContentService
 from app.services.content_search_service import ContentSearchService
 from app.services.content_generation_service import ContentGenerationService
 from app.services.content_editing_service import ContentEditingService
 from app.services.trend_analysis_service import TrendAnalysisService
+from app.schemas.content import (
+    ContentCreate, ContentUpdate, ContentResponse, ContentListResponse,
+    ContentScheduleCreate, ContentScheduleUpdate, ContentScheduleResponse,
+    CalendarEventResponse, ContentStatsResponse
+)
 
 router = APIRouter()
 
@@ -436,40 +443,245 @@ async def generate_content_calendar(
         raise HTTPException(status_code=500, detail=f"Content calendar generation failed: {str(e)}")
 
 # Legacy endpoints (kept for backward compatibility)
-@router.get("/")
+@router.get("/", response_model=ContentListResponse)
 async def list_content(
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    content_type: Optional[ContentType] = None,
+    status: Optional[ContentStatus] = None,
+    search: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """List user's content with enhanced AI features"""
-    return {
-        "message": "Advanced content management system ready!",
-        "features": [
-            "AI-powered content generation",
-            "Smart content editing",
-            "Trend analysis and prediction",
-            "Platform-specific optimization",
-            "Viral content enhancement"
-        ],
-        "endpoints": {
-            "search": "/search/*",
-            "generate": "/generate/*", 
-            "edit": "/edit/*",
-            "trends": "/trends/*"
-        }
-    }
+    """List user's content with pagination and filters"""
+    try:
+        content_service = ContentService(db)
+        content_list, total = await content_service.list_content(
+            user_id=current_user.id,
+            page=page,
+            size=size,
+            content_type=content_type,
+            status=status,
+            search=search
+        )
+        
+        return ContentListResponse(
+            items=[ContentResponse.model_validate(content) for content in content_list],
+            total=total,
+            page=page,
+            size=size,
+            pages=math.ceil(total / size)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch content: {str(e)}")
 
-@router.post("/")
+
+@router.post("/", response_model=ContentResponse)
 async def create_content(
+    content_data: ContentCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Create new content with AI assistance"""
-    return {
-        "message": "Use the new AI-powered generation endpoints",
-        "text_generation": "/generate/text",
-        "image_generation": "/generate/image",
-        "video_generation": "/generate/video",
-        "meme_generation": "/generate/meme",
-        "carousel_generation": "/generate/carousel"
-    }
+    """Create new content"""
+    try:
+        content_service = ContentService(db)
+        content = await content_service.create_content(content_data, current_user.id)
+        return ContentResponse.model_validate(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create content: {str(e)}")
+
+
+@router.get("/{content_id}", response_model=ContentResponse)
+async def get_content(
+    content_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get specific content by ID"""
+    try:
+        content_service = ContentService(db)
+        content = await content_service.get_content_by_id(content_id, current_user.id)
+        if not content:
+            raise HTTPException(status_code=404, detail="Content not found")
+        return ContentResponse.model_validate(content)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch content: {str(e)}")
+
+
+@router.put("/{content_id}", response_model=ContentResponse)
+async def update_content(
+    content_id: int,
+    content_data: ContentUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update content"""
+    try:
+        content_service = ContentService(db)
+        content = await content_service.update_content(content_id, content_data, current_user.id)
+        if not content:
+            raise HTTPException(status_code=404, detail="Content not found")
+        return ContentResponse.model_validate(content)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update content: {str(e)}")
+
+
+@router.delete("/{content_id}")
+async def delete_content(
+    content_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete content"""
+    try:
+        content_service = ContentService(db)
+        success = await content_service.delete_content(content_id, current_user.id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Content not found")
+        return {"message": "Content deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete content: {str(e)}")
+
+
+# Content upload endpoints
+@router.post("/upload", response_model=ContentResponse)
+async def upload_content(
+    file: UploadFile = File(...),
+    title: str = Form(...),
+    description: Optional[str] = Form(None),
+    content_type: ContentType = Form(...),
+    tags: Optional[str] = Form(None),  # Comma-separated tags
+    hashtags: Optional[str] = Form(None),  # Comma-separated hashtags
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Upload content file and create content record"""
+    try:
+        content_service = ContentService(db)
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Save uploaded file
+        file_path = await content_service.save_uploaded_file(
+            file_content, file.filename or "unknown", current_user.id
+        )
+        
+        # Parse tags and hashtags
+        tag_list = [tag.strip() for tag in (tags or "").split(",") if tag.strip()]
+        hashtag_list = [tag.strip() for tag in (hashtags or "").split(",") if tag.strip()]
+        
+        # Create content record
+        content_data = ContentCreate(
+            title=title,
+            description=description,
+            content_type=content_type,
+            tags=tag_list,
+            hashtags=hashtag_list
+        )
+        
+        content = await content_service.create_content(
+            content_data, current_user.id, file_path
+        )
+        
+        return ContentResponse.model_validate(content)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+# Content scheduling endpoints
+@router.post("/schedule", response_model=ContentScheduleResponse)
+async def schedule_content(
+    schedule_data: ContentScheduleCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Schedule content for posting"""
+    try:
+        content_service = ContentService(db)
+        schedule = await content_service.schedule_content(schedule_data, current_user.id)
+        if not schedule:
+            raise HTTPException(status_code=404, detail="Content or social account not found")
+        return ContentScheduleResponse.model_validate(schedule)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to schedule content: {str(e)}")
+
+
+@router.get("/schedule/calendar")
+async def get_calendar_events(
+    start_date: datetime = Query(...),
+    end_date: datetime = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get calendar events for scheduled content"""
+    try:
+        content_service = ContentService(db)
+        events = await content_service.get_calendar_events(
+            current_user.id, start_date, end_date
+        )
+        return {"events": events}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch calendar events: {str(e)}")
+
+
+@router.put("/schedule/{schedule_id}", response_model=ContentScheduleResponse)
+async def update_schedule(
+    schedule_id: int,
+    schedule_data: ContentScheduleUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update content schedule"""
+    try:
+        content_service = ContentService(db)
+        schedule = await content_service.update_schedule(schedule_id, schedule_data, current_user.id)
+        if not schedule:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+        return ContentScheduleResponse.model_validate(schedule)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update schedule: {str(e)}")
+
+
+@router.delete("/schedule/{schedule_id}")
+async def delete_schedule(
+    schedule_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete content schedule"""
+    try:
+        content_service = ContentService(db)
+        success = await content_service.delete_schedule(schedule_id, current_user.id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+        return {"message": "Schedule deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete schedule: {str(e)}")
+
+
+@router.get("/stats", response_model=ContentStatsResponse)
+async def get_content_stats(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get content statistics for dashboard"""
+    try:
+        content_service = ContentService(db)
+        stats = await content_service.get_content_stats(current_user.id)
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch content stats: {str(e)}")
