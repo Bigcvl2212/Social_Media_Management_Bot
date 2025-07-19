@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-community/netinfo": "^11.4.1",
     "@react-native-firebase/app": "^20.5.0",
     "@react-native-firebase/messaging": "^20.5.0",
     "@react-native/new-app-screen": "0.80.1",
@@ -18,19 +19,18 @@
     "@react-navigation/stack": "^7.4.2",
     "@tanstack/react-query": "^5.83.0",
     "axios": "^1.10.0",
+    "i18next": "^23.15.0",
     "react": "19.1.0",
+    "react-i18next": "^15.2.0",
     "react-native": "0.80.1",
     "react-native-gesture-handler": "^2.27.1",
     "react-native-image-picker": "^7.2.0",
     "react-native-localize": "^3.4.2",
     "react-native-mmkv": "^3.2.0",
+    "react-native-permissions": "^4.1.5",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.13.1",
-    "react-native-vector-icons": "^10.2.0",
-    "react-i18next": "^15.2.0",
-    "i18next": "^23.15.0",
-    "@react-native-community/netinfo": "^11.4.1",
-    "react-native-permissions": "^4.1.5"
+    "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -44,6 +44,8 @@
     "@react-native/eslint-config": "0.80.1",
     "@react-native/metro-config": "0.80.1",
     "@react-native/typescript-config": "0.80.1",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.2.0",
     "@types/jest": "^29.5.13",
     "@types/react": "^19.1.0",
     "@types/react-native-vector-icons": "^6.4.18",

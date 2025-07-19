@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Export method: app-store, ad-hoc, enterprise, development -->
+    <key>method</key>
+    <string>app-store</string>
+    
+    <!-- Your Apple Developer Team ID -->
+    <key>teamID</key>
+    <string>YOUR_TEAM_ID_HERE</string>
+    
+    <!-- Whether to upload bitcode (deprecated for iOS 14+) -->
+    <key>uploadBitcode</key>
+    <false/>
+    
+    <!-- Whether to upload symbols for crash reporting -->
+    <key>uploadSymbols</key>
+    <true/>
+    
+    <!-- Whether to compile bitcode (deprecated for iOS 14+) -->
+    <key>compileBitcode</key>
+    <false/>
+    
+    <!-- Signing certificate and provisioning profile configuration -->
+    <key>signingStyle</key>
+    <string>automatic</string>
+    
+    <!-- Strip Swift symbols to reduce app size -->
+    <key>stripSwiftSymbols</key>
+    <true/>
+    
+    <!-- Thinning for App Store distribution -->
+    <key>thinning</key>
+    <string>&lt;thin-for-all-variants&gt;</string>
+    
+    <!-- Destination for export -->
+    <key>destination</key>
+    <string>export</string>
+</dict>
+</plist>
