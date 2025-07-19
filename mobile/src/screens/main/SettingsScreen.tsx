@@ -67,7 +67,7 @@ export default function SettingsScreen() {
 
   const handleSyncDrafts = async () => {
     try {
-      const result = await offlineStorageService.forcSync();
+      const result = await offlineStorageService.forceSync();
       Alert.alert(
         t('common.success'),
         `Synced ${result.syncedCount} drafts. ${result.failedCount} failed.`

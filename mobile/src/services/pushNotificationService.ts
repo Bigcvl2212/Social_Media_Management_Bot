@@ -30,8 +30,7 @@ class PushNotificationService {
       // Request permission
       const authStatus = await this.requestPermission();
       
-      if (authStatus === messaging.AuthorizationStatus.AUTHORIZED || 
-          authStatus === messaging.AuthorizationStatus.PROVISIONAL) {
+      if (authStatus === 1 || authStatus === 2) { // AUTHORIZED or PROVISIONAL
         
         // Get FCM token
         await this.getFCMToken();
@@ -54,7 +53,7 @@ class PushNotificationService {
   /**
    * Request notification permission
    */
-  private async requestPermission(): Promise<messaging.AuthorizationStatus> {
+  private async requestPermission(): Promise<number> { // Use number instead of messaging.AuthorizationStatus
     if (Platform.OS === 'android') {
       // Request Android notification permission for API level 33+
       if (Platform.Version >= 33) {
@@ -63,7 +62,7 @@ class PushNotificationService {
         );
         
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          return messaging.AuthorizationStatus.DENIED;
+          return 0; // DENIED
         }
       }
     }

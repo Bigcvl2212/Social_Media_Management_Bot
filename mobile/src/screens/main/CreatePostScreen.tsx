@@ -112,24 +112,25 @@ export default function CreatePostScreen() {
 
         case 'image':
           const imageResult = await aiContentService.generateImage(aiPrompt, 'square');
-          if (imageResult.url) {
+          if (imageResult.image_url) {
             // Add the generated image to media files
             const mockMediaFile: MediaFile = {
-              uri: imageResult.url,
+              uri: imageResult.image_url,
               type: 'image/jpeg',
-              fileName: 'ai-generated-image.jpg',
+              filename: 'ai-generated-image.jpg',
               fileSize: 0,
               width: 512,
               height: 512,
             };
             setMediaFiles(prev => [...prev, mockMediaFile]);
-            setUploadedUrls(prev => [...prev, imageResult.url]);
+            setUploadedUrls(prev => [...prev, imageResult.image_url]);
           }
           break;
 
         case 'ideas':
           const ideas = await aiContentService.getContentIdeas(selectedPlatforms.length > 0 ? selectedPlatforms : ['instagram'], contentType);
-          setAiSuggestions(ideas);
+          const ideaTexts = ideas.map(idea => typeof idea === 'string' ? idea : idea.title || idea.content || '');
+          setAiSuggestions(ideaTexts);
           break;
       }
 
@@ -157,7 +158,7 @@ export default function CreatePostScreen() {
     }
 
     try {
-      const hashtags = await aiContentService.generateHashtags(caption, selectedPlatforms[0] || 'instagram', 10);
+      const hashtags = await aiContentService.generateHashtags(caption, [selectedPlatforms[0] || 'instagram'], 10);
       setGeneratedHashtags(hashtags);
     } catch (error) {
       Alert.alert('Error', 'Failed to generate hashtags');

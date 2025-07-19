@@ -424,8 +424,11 @@ class OfflineStorageService {
       return false;
     } catch (error) {
       // If content doesn't exist on server, no conflict
-      if (error.response?.status === 404) {
-        return false;
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorWithResponse = error as { response?: { status?: number } };
+        if (errorWithResponse.response?.status === 404) {
+          return false;
+        }
       }
       throw error;
     }
