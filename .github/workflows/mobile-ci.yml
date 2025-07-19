@@ -1,0 +1,52 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths: 
+      - 'mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: './mobile/package-lock.json'
+    
+    - name: Install dependencies
+      working-directory: ./mobile
+      run: npm ci
+    
+    - name: Run linting
+      working-directory: ./mobile
+      run: npm run lint
+    
+    - name: Run tests
+      working-directory: ./mobile
+      run: npm test
+    
+    - name: Build for Android (if applicable)
+      working-directory: ./mobile
+      run: |
+        # Skip actual build as it requires Android SDK
+        echo "Android build would run here in a full CI environment"
+    
+    - name: Build for iOS (if applicable)
+      working-directory: ./mobile
+      run: |
+        # Skip actual build as it requires Xcode
+        echo "iOS build would run here in a full CI environment"
