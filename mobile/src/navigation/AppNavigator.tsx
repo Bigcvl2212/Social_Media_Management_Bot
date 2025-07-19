@@ -6,9 +6,10 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StatusBar, useColorScheme } from 'react-native';
+import { StatusBar } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-// Import screens (we'll create these next)
+// Import screens
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import DashboardScreen from '../screens/main/DashboardScreen';
@@ -17,34 +18,65 @@ import CreatePostScreen from '../screens/main/CreatePostScreen';
 import AnalyticsScreen from '../screens/main/AnalyticsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import SocialAccountsScreen from '../screens/main/SocialAccountsScreen';
+import SettingsScreen from '../screens/main/SettingsScreen';
 
 import { RootStackParamList, MainTabParamList } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../contexts/ThemeContext';
 
 const RootStack = createStackNavigator<RootStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 
+// Tab bar icon renderer
+const renderTabBarIcon = (route: any, color: string, size: number) => {
+  let iconName = '';
+
+  switch (route.name) {
+    case 'Dashboard':
+      iconName = 'dashboard';
+      break;
+    case 'Calendar':
+      iconName = 'event';
+      break;
+    case 'Create':
+      iconName = 'add-circle';
+      break;
+    case 'Analytics':
+      iconName = 'analytics';
+      break;
+    case 'Profile':
+      iconName = 'person';
+      break;
+    default:
+      iconName = 'help';
+  }
+
+  return <Icon name={iconName} size={size} color={color} />;
+};
+
 // Main Tab Navigator
 function MainTabNavigator() {
+  const { theme } = useTheme();
+
   return (
     <MainTab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#ffffff',
+          backgroundColor: theme.colors.surface,
           borderTopWidth: 1,
-          borderTopColor: '#e5e7eb',
+          borderTopColor: theme.colors.border,
         },
-        tabBarActiveTintColor: '#3b82f6',
-        tabBarInactiveTintColor: '#6b7280',
-      }}
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textSecondary,
+        tabBarIcon: ({ color, size }) => renderTabBarIcon(route, color, size),
+      })}
     >
       <MainTab.Screen 
         name="Dashboard" 
         component={DashboardScreen}
         options={{
           tabBarLabel: 'Dashboard',
-          // TODO: Add icon
         }}
       />
       <MainTab.Screen 
@@ -52,7 +84,6 @@ function MainTabNavigator() {
         component={CalendarScreen}
         options={{
           tabBarLabel: 'Calendar',
-          // TODO: Add icon
         }}
       />
       <MainTab.Screen 
@@ -60,7 +91,6 @@ function MainTabNavigator() {
         component={CreatePostScreen}
         options={{
           tabBarLabel: 'Create',
-          // TODO: Add icon
         }}
       />
       <MainTab.Screen 
@@ -68,7 +98,6 @@ function MainTabNavigator() {
         component={AnalyticsScreen}
         options={{
           tabBarLabel: 'Analytics',
-          // TODO: Add icon
         }}
       />
       <MainTab.Screen 
@@ -76,7 +105,6 @@ function MainTabNavigator() {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          // TODO: Add icon
         }}
       />
     </MainTab.Navigator>
@@ -85,10 +113,13 @@ function MainTabNavigator() {
 
 // Auth Stack Navigator
 function AuthStackNavigator() {
+  const { theme } = useTheme();
+
   return (
     <RootStack.Navigator
       screenOptions={{
         headerShown: false,
+        cardStyle: { backgroundColor: theme.colors.background },
       }}
     >
       <RootStack.Screen name="Login" component={LoginScreen} />
@@ -100,7 +131,7 @@ function AuthStackNavigator() {
 // Main App Navigator
 function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
-  const isDarkMode = useColorScheme() === 'dark';
+  const { theme, isDark } = useTheme();
 
   // TODO: Add loading screen
   if (isLoading) {
@@ -108,15 +139,47 @@ function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+    <NavigationContainer
+      theme={{
+        dark: isDark,
+        colors: {
+          primary: theme.colors.primary,
+          background: theme.colors.background,
+          card: theme.colors.surface,
+          text: theme.colors.text,
+          border: theme.colors.border,
+          notification: theme.colors.primary,
+        },
+      }}
+    >
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
       {isAuthenticated ? (
-        <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        <RootStack.Navigator 
+          screenOptions={{ 
+            headerShown: false,
+            cardStyle: { backgroundColor: theme.colors.background },
+          }}
+        >
           <RootStack.Screen name="Main" component={MainTabNavigator} />
           <RootStack.Screen 
             name="SocialAccounts" 
             component={SocialAccountsScreen}
-            options={{ headerShown: true, title: 'Social Accounts' }}
+            options={{ 
+              headerShown: true, 
+              title: 'Social Accounts',
+              headerStyle: { backgroundColor: theme.colors.surface },
+              headerTintColor: theme.colors.text,
+            }}
+          />
+          <RootStack.Screen 
+            name="Settings" 
+            component={SettingsScreen}
+            options={{ 
+              headerShown: true, 
+              title: 'Settings',
+              headerStyle: { backgroundColor: theme.colors.surface },
+              headerTintColor: theme.colors.text,
+            }}
           />
         </RootStack.Navigator>
       ) : (

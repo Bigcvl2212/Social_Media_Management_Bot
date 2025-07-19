@@ -12,12 +12,19 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../contexts/ThemeContext';
 import { DashboardData } from '../../types';
 import apiClient, { API_ENDPOINTS } from '../../services/api';
 
 export default function DashboardScreen() {
+  const { t } = useTranslation();
+  const { theme } = useTheme();
   const { user, logout } = useAuth();
+  const navigation = useNavigation();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [_isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,111 +62,176 @@ export default function DashboardScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      t('auth.logout'),
+      t('settings.logoutConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', onPress: logout, style: 'destructive' },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('auth.logout'), onPress: logout, style: 'destructive' },
       ]
     );
   };
 
+  const navigateToSettings = () => {
+    navigation.navigate('Settings' as never);
+  };
+
+  const quickActions = [
+    {
+      id: 'create',
+      title: t('dashboard.createPost'),
+      subtitle: t('dashboard.shareNewContent'),
+      icon: 'add-circle',
+      color: theme.colors.primary,
+      onPress: () => navigation.navigate('Create' as never),
+    },
+    {
+      id: 'connect',
+      title: t('dashboard.connectAccount'),
+      subtitle: t('dashboard.linkSocialPlatforms'),
+      icon: 'link',
+      color: theme.colors.success,
+      onPress: () => navigation.navigate('SocialAccounts' as never),
+    },
+    {
+      id: 'analytics',
+      title: t('dashboard.viewAnalytics'),
+      subtitle: t('dashboard.checkPerformance'),
+      icon: 'analytics',
+      color: theme.colors.info,
+      onPress: () => navigation.navigate('Analytics' as never),
+    },
+    {
+      id: 'schedule',
+      title: t('dashboard.schedulePosts'),
+      subtitle: t('dashboard.planYourContent'),
+      icon: 'schedule',
+      color: theme.colors.warning,
+      onPress: () => navigation.navigate('Calendar' as never),
+    },
+  ];
+
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
         <View>
-          <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.userName}>{user?.full_name || user?.username}</Text>
+          <Text style={[styles.welcomeText, { color: theme.colors.textSecondary }]}>
+            {t('dashboard.welcomeBack')}
+          </Text>
+          <Text style={[styles.userName, { color: theme.colors.text }]}>
+            {user?.full_name || user?.username}
+          </Text>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.settingsButton} onPress={navigateToSettings}>
+            <Icon name="settings" size={24} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.logoutButton, { backgroundColor: theme.colors.error }]} onPress={handleLogout}>
+            <Text style={[styles.logoutButtonText, { color: theme.colors.surface }]}>
+              {t('auth.logout')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.statNumber, { color: theme.colors.primary }]}>
               {dashboardData?.total_followers.toLocaleString() || '0'}
             </Text>
-            <Text style={styles.statLabel}>Total Followers</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+              {t('dashboard.totalFollowers')}
+            </Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.statNumber, { color: theme.colors.primary }]}>
               {dashboardData?.total_posts || '0'}
             </Text>
-            <Text style={styles.statLabel}>Total Posts</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+              {t('dashboard.totalPosts')}
+            </Text>
           </View>
         </View>
 
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.statNumber, { color: theme.colors.primary }]}>
               {dashboardData?.avg_engagement_rate.toFixed(1) || '0.0'}%
             </Text>
-            <Text style={styles.statLabel}>Avg Engagement</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+              {t('dashboard.avgEngagement')}
+            </Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.statNumber, { color: theme.colors.primary }]}>
               {dashboardData?.platforms_count || '0'}
             </Text>
-            <Text style={styles.statLabel}>Connected Platforms</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+              {t('dashboard.connectedPlatforms')}
+            </Text>
           </View>
         </View>
       </View>
 
       {/* Quick Actions */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          {t('dashboard.quickActions')}
+        </Text>
         <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionCard}>
-            <Text style={styles.actionTitle}>Create Post</Text>
-            <Text style={styles.actionSubtitle}>Share new content</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionCard}>
-            <Text style={styles.actionTitle}>Connect Account</Text>
-            <Text style={styles.actionSubtitle}>Link social platforms</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionCard}>
-            <Text style={styles.actionTitle}>View Analytics</Text>
-            <Text style={styles.actionSubtitle}>Check performance</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionCard}>
-            <Text style={styles.actionTitle}>Schedule Posts</Text>
-            <Text style={styles.actionSubtitle}>Plan your content</Text>
-          </TouchableOpacity>
+          {quickActions.map((action) => (
+            <TouchableOpacity
+              key={action.id}
+              style={[styles.actionCard, { backgroundColor: theme.colors.surface }]}
+              onPress={action.onPress}
+            >
+              <Icon name={action.icon} size={24} color={action.color} style={styles.actionIcon} />
+              <Text style={[styles.actionTitle, { color: theme.colors.text }]}>
+                {action.title}
+              </Text>
+              <Text style={[styles.actionSubtitle, { color: theme.colors.textSecondary }]}>
+                {action.subtitle}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
       {/* Recent Posts */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent Posts</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          {t('dashboard.recentPosts')}
+        </Text>
         {dashboardData?.recent_posts.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No posts yet</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Create your first post to get started
+          <View style={[styles.emptyState, { backgroundColor: theme.colors.surface }]}>
+            <Icon name="post-add" size={48} color={theme.colors.textSecondary} />
+            <Text style={[styles.emptyStateText, { color: theme.colors.text }]}>
+              {t('dashboard.noPosts')}
+            </Text>
+            <Text style={[styles.emptyStateSubtext, { color: theme.colors.textSecondary }]}>
+              {t('dashboard.createFirstPost')}
             </Text>
           </View>
         ) : (
           <View>
             {dashboardData?.recent_posts.map((post) => (
-              <View key={post.id} style={styles.postCard}>
-                <Text style={styles.postTitle}>{post.title}</Text>
-                <Text style={styles.postCaption} numberOfLines={2}>
+              <View key={post.id} style={[styles.postCard, { backgroundColor: theme.colors.surface }]}>
+                <Text style={[styles.postTitle, { color: theme.colors.text }]}>
+                  {post.title}
+                </Text>
+                <Text style={[styles.postCaption, { color: theme.colors.textSecondary }]} numberOfLines={2}>
                   {post.caption}
                 </Text>
-                <Text style={styles.postStatus}>Status: {post.status}</Text>
+                <Text style={[styles.postStatus, { color: theme.colors.primary }]}>
+                  Status: {post.status}
+                </Text>
               </View>
             ))}
           </View>
@@ -172,34 +244,35 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   welcomeText: {
     fontSize: 16,
-    color: '#6b7280',
   },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  settingsButton: {
+    padding: 8,
   },
   logoutButton: {
-    backgroundColor: '#ef4444',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
   },
   logoutButtonText: {
-    color: '#ffffff',
     fontWeight: '600',
   },
   statsContainer: {
@@ -212,7 +285,6 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
     padding: 20,
     borderRadius: 12,
     marginHorizontal: 4,
@@ -226,12 +298,10 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#3b82f6',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 14,
-    color: '#6b7280',
     textAlign: 'center',
   },
   section: {
@@ -240,7 +310,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1f2937',
     marginBottom: 16,
   },
   actionsContainer: {
@@ -250,7 +319,6 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     width: '48%',
-    backgroundColor: '#ffffff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -260,18 +328,18 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  actionIcon: {
+    marginBottom: 8,
+  },
   actionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
     marginBottom: 4,
   },
   actionSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
   },
   emptyState: {
-    backgroundColor: '#ffffff',
     padding: 32,
     borderRadius: 12,
     alignItems: 'center',
@@ -284,16 +352,14 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1f2937',
+    marginTop: 16,
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#6b7280',
     textAlign: 'center',
   },
   postCard: {
-    backgroundColor: '#ffffff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -306,17 +372,14 @@ const styles = StyleSheet.create({
   postTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
     marginBottom: 8,
   },
   postCaption: {
     fontSize: 14,
-    color: '#6b7280',
     marginBottom: 8,
   },
   postStatus: {
     fontSize: 12,
-    color: '#3b82f6',
     fontWeight: '500',
   },
 });

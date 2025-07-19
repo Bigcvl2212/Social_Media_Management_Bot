@@ -326,6 +326,17 @@ class TrendAnalysisService:
         
         return predictions
     
+    async def _analyze_competition(self, platform: Platform, timeframe_days: int) -> dict:
+        """Analyze competition on the platform (placeholder implementation)."""
+        return {
+            "top_competitors": ["@user1", "@user2"],
+            "engagement_comparison": {
+                "account": 0.08,
+                "competitor_average": 0.11
+            },
+            "content_gap_opportunity": ["educational", "behind_scenes"]
+        }
+    
     async def _analyze_content_concept(self, description: str, platform: Platform, content_type: ContentType) -> Dict[str, Any]:
         """Analyze content concept for viral potential"""
         if not self.openai_client:
