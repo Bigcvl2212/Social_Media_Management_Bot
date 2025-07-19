@@ -131,7 +131,7 @@ export function DashboardOverview() {
           Welcome back!
         </h1>
         <p className="mt-3 text-lg text-gray-300 animate-slide-in-up" style={{animationDelay: '200ms'}}>
-          Here's what's happening with your social media empire today.
+          Here&apos;s what&apos;s happening with your social media empire today.
         </p>
         <div className="mt-4 flex items-center justify-center lg:justify-start space-x-2 animate-slide-in-up" style={{animationDelay: '400ms'}}>
           <div className="h-2 w-2 bg-green-400 rounded-full animate-glow"></div>
@@ -210,7 +210,7 @@ export function DashboardOverview() {
           </div>
           
           <div className="space-y-4">
-            {recentActivity.map((activity, activityIdx) => (
+            {recentActivity.map((activity) => (
               <div
                 key={activity.id}
                 className="group glass rounded-xl p-4 hover:bg-white/5 transition-all duration-300 interactive-card"
