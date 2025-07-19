@@ -77,6 +77,6 @@ jobs:
       working-directory: ./docker
       run: |
         # Test docker-compose file syntax
-        docker-compose config
+        docker compose config
         # Test that services can be built (but not started due to dependencies)
-        docker-compose build --no-cache
+        docker compose build --no-cache

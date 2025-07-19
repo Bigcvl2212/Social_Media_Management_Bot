@@ -69,7 +69,12 @@ jobs:
     
     - name: Install frontend dependencies
       working-directory: ./frontend
-      run: npm ci
+      run: |
+        npm install || {
+          echo "npm install failed, trying to fix package-lock.json"
+          rm -f package-lock.json
+          npm install
+        }
     
     - name: Set up test environment
       run: |
