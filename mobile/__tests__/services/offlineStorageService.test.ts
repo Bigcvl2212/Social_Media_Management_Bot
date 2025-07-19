@@ -3,8 +3,8 @@
  * Tests for offline content drafting and synchronization
  */
 
-import NetInfo from '@react-native-community/netinfo';
-import offlineStorageService, { OfflineDraft, SyncResult } from '../../src/services/offlineStorageService';
+// import NetInfo from '@react-native-community/netinfo'; // Unused import
+import offlineStorageService, { OfflineDraft } from '../../src/services/offlineStorageService';
 import apiClient from '../../src/services/api';
 
 // Mock MMKV

@@ -68,7 +68,8 @@ describe('MediaUploadService', () => {
     it('should request camera permission successfully', async () => {
       (request as jest.Mock).mockResolvedValue(RESULTS.GRANTED);
 
-      const result = await mediaUploadService.openCamera({
+      // const result = await mediaUploadService.openCamera({
+      await mediaUploadService.openCamera({
         mediaType: 'photo',
         quality: 0.8,
       });

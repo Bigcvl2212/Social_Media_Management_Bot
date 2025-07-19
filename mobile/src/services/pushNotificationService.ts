@@ -7,7 +7,7 @@
 import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import { Platform, PermissionsAndroid, Alert } from 'react-native';
 import { MMKV } from 'react-native-mmkv';
-import apiClient from '../api';
+import apiClient from './api';
 
 export interface NotificationData {
   id: string;
