@@ -3,8 +3,7 @@ Configuration settings for the Social Media Management Bot
 """
 
 from typing import List, Optional, Union
-from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BaseSettings, validator
 import os
 from pathlib import Path
 
@@ -87,7 +86,7 @@ class Settings(BaseSettings):
     TIKTOK_CLIENT_SECRET: Optional[str] = None
     YOUTUBE_API_KEY: Optional[str] = None
     
-    @field_validator("ALLOWED_HOSTS", mode="before")
+    @validator("ALLOWED_HOSTS", pre=True)
     @classmethod
     def assemble_cors_origins(cls, v):
         if isinstance(v, str):
@@ -96,7 +95,9 @@ class Settings(BaseSettings):
             return v
         return ["*"]
     
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
 
 # Create settings instance

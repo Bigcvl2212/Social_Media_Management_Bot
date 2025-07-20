@@ -3,7 +3,7 @@ Tests for integration functionality
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, Mock
 from datetime import datetime, timedelta
 
 from app.models.integration import (
@@ -86,7 +86,9 @@ class TestIntegrationService:
         ]
         
         mock_result = AsyncMock()
-        mock_result.scalars.return_value.all.return_value = mock_integrations
+        mock_scalars = Mock()
+        mock_scalars.all.return_value = mock_integrations
+        mock_result.scalars = Mock(return_value=mock_scalars)
         db_mock.execute = AsyncMock(return_value=mock_result)
         
         result = await integration_service.get_user_integrations(
@@ -143,7 +145,7 @@ class TestCampaignService:
             user_id=1
         )
         mock_result = AsyncMock()
-        mock_result.scalar_one_or_none.return_value = mock_integration
+        mock_result.scalar_one_or_none = Mock(return_value=mock_integration)
         db_mock.execute = AsyncMock(return_value=mock_result)
         
         campaign_data = CampaignCreate(
@@ -184,7 +186,7 @@ class TestCampaignService:
         )
         
         mock_result = AsyncMock()
-        mock_result.scalar_one_or_none.return_value = mock_campaign
+        mock_result.scalar_one_or_none = Mock(return_value=mock_campaign)
         db_mock.execute = AsyncMock(return_value=mock_result)
         db_mock.commit = AsyncMock()
         
@@ -244,7 +246,7 @@ class TestAPIKeyService:
         )
         
         mock_result = AsyncMock()
-        mock_result.scalar_one_or_none.return_value = mock_api_key
+        mock_result.scalar_one_or_none = Mock(return_value=mock_api_key)
         db_mock.execute = AsyncMock(return_value=mock_result)
         db_mock.commit = AsyncMock()
         
@@ -272,7 +274,7 @@ class TestAPIKeyService:
         )
         
         mock_result = AsyncMock()
-        mock_result.scalar_one_or_none.return_value = mock_api_key
+        mock_result.scalar_one_or_none = Mock(return_value=mock_api_key)
         db_mock.execute = AsyncMock(return_value=mock_result)
         
         result = await api_key_service.validate_api_key(
@@ -330,7 +332,9 @@ class TestZapierService:
         ]
         
         mock_result = AsyncMock()
-        mock_result.scalars.return_value.all.return_value = mock_webhooks
+        mock_scalars = Mock()
+        mock_scalars.all.return_value = mock_webhooks
+        mock_result.scalars = Mock(return_value=mock_scalars)
         db_mock.execute = AsyncMock(return_value=mock_result)
         db_mock.commit = AsyncMock()
         
@@ -402,8 +406,7 @@ class TestIntegrationModels:
         assert api_key.name == "Test API Key"
         assert api_key.key_value == "smm_test_key_123"
         assert api_key.user_id == 1
-        assert api_key.rate_limit == 1000
-        assert api_key.is_active == True  # Default value
+        # Note: Default values are applied at database insert time, not at model creation
 
     def test_zapier_webhook_model_creation(self):
         """Test creating a ZapierWebhook model instance"""
@@ -418,8 +421,7 @@ class TestIntegrationModels:
         assert webhook.trigger_event == "content_posted"
         assert webhook.webhook_url == "https://hooks.zapier.com/hooks/catch/123/abc"
         assert webhook.user_id == 1
-        assert webhook.is_active == True  # Default value
-        assert webhook.total_triggers == 0  # Default value
+        # Note: Default values are applied at database insert time, not at model creation
 
 
 class TestIntegrationEnums:
