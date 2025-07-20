@@ -50,6 +50,10 @@ class User(Base):
     # Relationships
     social_accounts = relationship("SocialAccount", back_populates="user", cascade="all, delete-orphan")
     content = relationship("Content", back_populates="created_by_user", cascade="all, delete-orphan")
+    integrations = relationship("Integration", back_populates="user", cascade="all, delete-orphan")
+    campaigns = relationship("Campaign", back_populates="user", cascade="all, delete-orphan")
+    api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
+    zapier_webhooks = relationship("ZapierWebhook", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
