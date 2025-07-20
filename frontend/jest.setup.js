@@ -86,20 +86,48 @@ global.ResizeObserver = class ResizeObserver {
   }
 };
 
-// Suppress console warnings in tests
+// Suppress console warnings and errors in tests
 const originalError = console.error;
+const originalLog = console.log;
+const originalWarn = console.warn;
+
 beforeAll(() => {
+  // Suppress console.error
   console.error = (...args) => {
     if (
       typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render is no longer supported')
+      (args[0].includes('Warning: ReactDOM.render is no longer supported') ||
+       args[0].includes('Error Boundary caught an error:') ||
+       args[0].includes('The above error occurred in the <ThrowError> component'))
     ) {
       return;
     }
     return originalError.call(console, ...args);
   };
+
+  // Suppress console.log in tests unless explicitly needed
+  console.log = (...args) => {
+    // Only allow test-specific logs
+    if (typeof args[0] === 'string' && args[0].includes('[TEST]')) {
+      return originalLog.call(console, ...args);
+    }
+    // Suppress all other logs during testing
+  };
+
+  // Suppress console.warn
+  console.warn = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning:') || args[0].includes('React'))
+    ) {
+      return;
+    }
+    return originalWarn.call(console, ...args);
+  };
 });
 
 afterAll(() => {
   console.error = originalError;
+  console.log = originalLog;
+  console.warn = originalWarn;
 });

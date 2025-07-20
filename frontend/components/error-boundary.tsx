@@ -68,8 +68,8 @@ export function ErrorBoundary({
   onError
 }: ErrorBoundaryProps) {
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
-    // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
+    // Log error to console in development (but not during testing)
+    if (process.env.NODE_ENV === 'development' && process.env.NODE_ENV !== 'test') {
       console.error('Error Boundary caught an error:', error, errorInfo);
     }
     

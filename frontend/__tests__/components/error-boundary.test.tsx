@@ -103,12 +103,16 @@ Object.defineProperty(window, 'Sentry', {
 describe('ErrorBoundary', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Suppress error console logs during tests
+    // Suppress all console outputs during error boundary tests
     jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    jest.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
     (console.error as jest.Mock).mockRestore();
+    (console.warn as jest.Mock).mockRestore();
+    (console.log as jest.Mock).mockRestore();
   });
 
   it('renders children when there is no error', () => {
