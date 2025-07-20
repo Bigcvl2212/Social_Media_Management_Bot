@@ -56,11 +56,13 @@ export default function TrendDiscoveryPage() {
     loadTrendingData();
     
     // Set up auto-refresh every 5 minutes
-    const interval = setInterval(loadTrendingData, 5 * 60 * 1000);
-    setRefreshInterval(interval);
+    refreshIntervalRef.current = setInterval(loadTrendingData, 5 * 60 * 1000);
     
     return () => {
-      if (refreshInterval) clearInterval(refreshInterval);
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
     };
   }, [selectedPlatforms]);
 
