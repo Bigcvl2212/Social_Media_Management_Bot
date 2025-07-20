@@ -1,0 +1,19 @@
+{
+  "errors.validation_failed": "Échec de validation",
+  "errors.unauthorized": "Accès non autorisé",
+  "errors.not_found": "Ressource non trouvée",
+  "errors.server_error": "Erreur interne du serveur",
+  "success.created": "Créé avec succès",
+  "success.updated": "Mis à jour avec succès",
+  "success.deleted": "Supprimé avec succès",
+  "accessibility.check_completed": "Vérification d'accessibilité terminée",
+  "accessibility.excellent_score": "Excellent score d'accessibilité!",
+  "accessibility.good_score": "Bon score d'accessibilité",
+  "accessibility.needs_improvement": "L'accessibilité a besoin d'améliorations",
+  "accessibility.poor_score": "Score d'accessibilité médiocre",
+  "content.generated": "Contenu généré avec succès",
+  "content.alt_text_suggestion": "Considérez ajouter un texte alternatif descriptif",
+  "content.contrast_warning": "Le contraste des couleurs peut être trop faible",
+  "content.readability_complex": "Le texte peut être trop complexe pour certains lecteurs",
+  "content.subtitles_missing": "Considérez ajouter des sous-titres pour le contenu vidéo"
+}
