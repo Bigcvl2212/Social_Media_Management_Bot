@@ -13,6 +13,7 @@ import logging
 
 from app.core.config import settings
 from app.core.database import create_tables
+from app.core.rate_limiting import rate_limit_middleware
 from app.api.main import api_router
 
 # Configure logging
@@ -59,6 +60,13 @@ def create_application() -> FastAPI:
         TrustedHostMiddleware,
         allowed_hosts=settings.ALLOWED_HOSTS
     )
+    
+    # Rate limiting middleware (applied after CORS and security)
+    try:
+        app.middleware("http")(rate_limit_middleware)
+    except Exception as e:
+        # If rate limiting fails to initialize, log but continue
+        logging.warning(f"Rate limiting middleware disabled: {e}")
 
     # Include API routes
     app.include_router(api_router, prefix=settings.API_V1_STR)

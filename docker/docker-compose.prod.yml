@@ -10,8 +10,14 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password_change_me}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups  # Mount backup directory
     networks:
       - social-bot-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Redis for Celery
   redis:
@@ -20,6 +26,11 @@ services:
       - redis_data:/data
     networks:
       - social-bot-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Backend API
   backend:
@@ -36,14 +47,26 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
       - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-your-domain.com,api.your-domain.com}
+      - API_RATE_LIMIT_DEFAULT=${API_RATE_LIMIT_DEFAULT:-1000}
+      - API_RATE_LIMIT_PREMIUM=${API_RATE_LIMIT_PREMIUM:-10000}
+      - API_RATE_LIMIT_ENTERPRISE=${API_RATE_LIMIT_ENTERPRISE:-50000}
     volumes:
       - backend_uploads:/app/uploads
+      - ./scripts:/app/scripts:ro  # Mount scripts for backup/restore
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - social-bot-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Celery Worker
   celery-worker:
@@ -57,8 +80,10 @@ services:
     volumes:
       - backend_uploads:/app/uploads
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - social-bot-network
     restart: unless-stopped
@@ -72,8 +97,10 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY:-production-secret-key-change-me}
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - social-bot-network
     restart: unless-stopped
@@ -84,10 +111,58 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.your-domain.com}
       - NODE_ENV=production
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://your-domain.com}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXT_PUBLIC_GA_TRACKING_ID=${NEXT_PUBLIC_GA_TRACKING_ID}
+      - NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - social-bot-network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL certificates
+      - ./nginx/logs:/var/log/nginx
     depends_on:
       - backend
+      - frontend
+    networks:
+      - social-bot-network
+    restart: unless-stopped
+
+  # Database Backup Service
+  backup:
+    image: postgres:15
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=socialmedia_db
+      - POSTGRES_USER=postgres
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-30}
+      - BACKUP_STORAGE_PATH=/backups
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts:ro
+    command: >
+      sh -c "
+        apk add --no-cache dcron &&
+        echo '${BACKUP_SCHEDULE:-0 2 * * *} /scripts/backup_database.sh' | crontab - &&
+        crond -f
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - social-bot-network
     restart: unless-stopped

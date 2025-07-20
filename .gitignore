@@ -310,3 +310,47 @@ mobile/.env.local
 mobile/.env.development.local
 mobile/.env.test.local
 mobile/.env.production.local
+
+# CRITICAL SECURITY - Never commit these files
+# Production environment files with real credentials
+.env.prod
+.env.production.real
+backend/.env.prod
+frontend/.env.production.real
+
+# SSL Certificates and Private Keys
+nginx/ssl/*.key
+nginx/ssl/*.pem
+nginx/ssl/*.crt
+nginx/ssl/*.p12
+ssl-certs/
+certificates/
+*.key
+*.pem
+*.crt
+*.p12
+
+# Backup files containing sensitive data
+backups/
+*.backup
+*.sql.gz
+*.dump
+database-backups/
+
+# Log files that may contain sensitive information
+logs/
+nginx/logs/
+application.log
+error.log
+access.log
+
+# Temporary files that may contain secrets
+/tmp/check_output
+temp-credentials*
+temp-secrets*
+
+# Production deployment artifacts
+deployment-configs/
+production-configs/
+secrets/
+credentials/
