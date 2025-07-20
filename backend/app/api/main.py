@@ -6,7 +6,11 @@ from fastapi import APIRouter
 
 
 
+
 from app.api.routes import auth, users, social_accounts, content, analytics, upload, monetization
+
+from app.api.routes import auth, users, social_accounts, content, analytics, upload, curation
+
 
 
 
@@ -43,7 +47,11 @@ api_router.include_router(content.router, prefix="/content", tags=["content"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 
+
 api_router.include_router(monetization.router, tags=["monetization"])
+
+api_router.include_router(curation.router, prefix="/curation", tags=["content-curation"])
+
 
 
 

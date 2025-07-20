@@ -1,6 +1,12 @@
 
+
 # Import all models here to ensure they are registered with SQLAlchemy
 from .monetization import Brand, Campaign, Collaboration, AffiliateLink
+
+from app.models.user import User
+from app.models.curation import CurationCollection
+from app.models.automation import DirectMessage, CommentManagement, ModerationRule, ModerationLog, AutomationConfig
+
 
 """
 Database models for the Social Media Management Bot

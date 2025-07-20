@@ -62,15 +62,8 @@ export default function ContentPage() {
   
   // Upload mutation
   const uploadMutation = useMutation({
-    mutationFn: async ({ file, metadata }: { 
+    mutationFn: async ({ file }: { 
       file: File; 
-      metadata: {
-        title: string;
-        description?: string;
-        content_type: ContentType;
-        tags?: string[];
-        hashtags?: string[];
-      }
     }) => {
       return contentApi.uploadFile(file, setUploadProgress);
     },
@@ -102,8 +95,7 @@ export default function ContentPage() {
     if (!file || !title) return;
     
     uploadMutation.mutate({
-      file,
-      metadata: { title, description, content_type, tags, hashtags }
+      file
     });
   };
   
