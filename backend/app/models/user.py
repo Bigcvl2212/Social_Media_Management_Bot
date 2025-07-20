@@ -50,8 +50,16 @@ class User(Base):
     # Relationships
     social_accounts = relationship("SocialAccount", back_populates="user", cascade="all, delete-orphan")
     content = relationship("Content", back_populates="created_by_user", cascade="all, delete-orphan")
+
     curation_collections = relationship("CurationCollection", back_populates="user", cascade="all, delete-orphan")
     trend_watches = relationship("TrendWatch", back_populates="user", cascade="all, delete-orphan")
+
+    direct_messages = relationship("DirectMessage", back_populates="user", cascade="all, delete-orphan")
+    comment_management = relationship("CommentManagement", back_populates="user", cascade="all, delete-orphan")
+    moderation_rules = relationship("ModerationRule", back_populates="user", cascade="all, delete-orphan")
+    moderation_logs = relationship("ModerationLog", back_populates="user", cascade="all, delete-orphan")
+    automation_config = relationship("AutomationConfig", back_populates="user", cascade="all, delete-orphan")
+
     
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
