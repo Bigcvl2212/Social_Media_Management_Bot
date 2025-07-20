@@ -4,7 +4,7 @@ Configuration settings for the Social Media Management Bot
 
 from typing import List, Optional, Union
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 import os
 from pathlib import Path
 
@@ -45,6 +45,34 @@ class Settings(BaseSettings):
     # AI Services
     OPENAI_API_KEY: Optional[str] = None
     
+    # Integration Settings
+    ENCRYPTION_KEY: str = "your-encryption-key-change-this-in-production"
+    
+    # CRM Integrations
+    HUBSPOT_CLIENT_ID: Optional[str] = None
+    HUBSPOT_CLIENT_SECRET: Optional[str] = None
+    SALESFORCE_CLIENT_ID: Optional[str] = None
+    SALESFORCE_CLIENT_SECRET: Optional[str] = None
+    
+    # E-commerce Integrations
+    SHOPIFY_API_KEY: Optional[str] = None
+    SHOPIFY_API_SECRET: Optional[str] = None
+    WOOCOMMERCE_CONSUMER_KEY: Optional[str] = None
+    WOOCOMMERCE_CONSUMER_SECRET: Optional[str] = None
+    
+    # Email/SMS Providers
+    MAILCHIMP_API_KEY: Optional[str] = None
+    SENDGRID_API_KEY: Optional[str] = None
+    TWILIO_ACCOUNT_SID: Optional[str] = None
+    TWILIO_AUTH_TOKEN: Optional[str] = None
+    
+    # Public API Settings
+    API_RATE_LIMIT_DEFAULT: int = 1000  # Requests per hour
+    API_RATE_LIMIT_PREMIUM: int = 10000  # Requests per hour for premium users
+    
+    # Zapier Integration
+    ZAPIER_WEBHOOK_TIMEOUT: int = 30  # Seconds
+    
     # Social Media API Keys (will be stored per user/account)
     # These are example environment variables - actual keys stored in database
     INSTAGRAM_APP_ID: Optional[str] = None
@@ -68,7 +96,10 @@ class Settings(BaseSettings):
             return v
         return ["*"]
     
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True
+    }
 
 
 # Create settings instance
