@@ -1,0 +1,16 @@
+{
+  "title": "Analytics",
+  "overview": "Overview",
+  "followers": "Followers",
+  "engagement": "Engagement",
+  "reach": "Reach",
+  "impressions": "Impressions",
+  "engagementRate": "Engagement Rate",
+  "period": "Period",
+  "last7Days": "Last 7 Days",
+  "last30Days": "Last 30 Days",
+  "last3Months": "Last 3 Months",
+  "topPosts": "Top Posts",
+  "bestTimes": "Best Times to Post",
+  "platformComparison": "Platform Comparison"
+}
