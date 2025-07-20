@@ -111,7 +111,12 @@ class CurationAPI {
 
     // Add authentication token if available
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
+      let token: string | null = null;
+      try {
+        token = localStorage.getItem('auth_token');
+      } catch (error) {
+        console.error('Error accessing localStorage:', error);
+      }
       if (token) {
         config.headers = {
           ...config.headers,
