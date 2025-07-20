@@ -100,6 +100,7 @@ export default function MonetizationDashboard() {
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch monetization data:', error);
+      setError(true);
       setLoading(false);
     }
   };
