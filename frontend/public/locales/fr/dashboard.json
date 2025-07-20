@@ -1,0 +1,19 @@
+{
+  "welcomeBack": "Welcome back,",
+  "totalFollowers": "Total Followers",
+  "totalPosts": "Total Posts",
+  "avgEngagement": "Avg Engagement",
+  "connectedPlatforms": "Connected Platforms",
+  "quickActions": "Quick Actions",
+  "createPost": "Create Post",
+  "shareNewContent": "Share new content",
+  "connectAccount": "Connect Account",
+  "linkSocialPlatforms": "Link social platforms",
+  "viewAnalytics": "View Analytics",
+  "checkPerformance": "Check performance",
+  "schedulePosts": "Schedule Posts",
+  "planYourContent": "Plan your content",
+  "recentPosts": "Recent Posts",
+  "noPosts": "No posts yet",
+  "createFirstPost": "Create your first post to get started"
+}

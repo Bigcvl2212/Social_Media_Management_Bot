@@ -58,6 +58,9 @@ async def create_tables():
             from app.models.social_account import SocialAccount
             from app.models.content import Content, ContentSchedule
             from app.models.analytics import Analytics
+            from app.models.competitor_analysis import CompetitorAccount, CompetitorAnalytics, CompetitorContent
+            from app.models.audience_segmentation import AudienceSegment, AudienceInsight, EngagementPattern
+            from app.models.growth_recommendations import GrowthRecommendation, ContentRecommendation, TimingRecommendation, HashtagRecommendation
             
             await conn.run_sync(Base.metadata.create_all)
             logger.info("Database tables created successfully")
