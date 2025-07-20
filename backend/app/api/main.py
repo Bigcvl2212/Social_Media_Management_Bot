@@ -4,7 +4,7 @@ Main API router combining all endpoints
 
 from fastapi import APIRouter
 
-from app.api.routes import auth, users, social_accounts, content, analytics, upload
+from app.api.routes import auth, users, social_accounts, content, analytics, upload, ai_multimodal
 
 api_router = APIRouter()
 
@@ -15,3 +15,4 @@ api_router.include_router(social_accounts.router, prefix="/social-accounts", tag
 api_router.include_router(content.router, prefix="/content", tags=["content"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
+api_router.include_router(ai_multimodal.router, prefix="/ai-multimodal", tags=["ai-multimodal"])
