@@ -6,7 +6,7 @@ import json
 import secrets
 import hashlib
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from fastapi import HTTPException
@@ -129,7 +129,7 @@ class IntegrationService:
         for field, value in update_data.items():
             setattr(integration, field, value)
         
-        integration.updated_at = datetime.utcnow()
+        integration.updated_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(integration)
         
@@ -167,7 +167,7 @@ class IntegrationService:
         test_results = {
             "status": "success",
             "message": f"Successfully connected to {integration.provider}",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "details": {
                 "provider": integration.provider,
                 "type": integration.type,
@@ -177,7 +177,7 @@ class IntegrationService:
         
         # Update integration status
         integration.status = IntegrationStatus.ACTIVE
-        integration.last_sync = datetime.utcnow()
+        integration.last_sync = datetime.now(timezone.utc)
         await db.commit()
         
         return test_results
@@ -283,12 +283,12 @@ class CampaignService:
         send_results = {
             "status": "success",
             "campaign_id": campaign_id,
-            "sent_at": datetime.utcnow().isoformat(),
+            "sent_at": datetime.now(timezone.utc).isoformat(),
             "recipients_count": 100,  # Mock data
             "delivery_rate": 0.98
         }
         
-        campaign.sent_at = datetime.utcnow()
+        campaign.sent_at = datetime.now(timezone.utc)
         await db.commit()
         
         return send_results
@@ -357,13 +357,13 @@ class APIKeyService:
         )
         api_key = result.scalar_one_or_none()
         
-        if api_key and api_key.expires_at and api_key.expires_at < datetime.utcnow():
+        if api_key and api_key.expires_at and api_key.expires_at < datetime.now(timezone.utc):
             return None
         
         if api_key:
             # Update usage tracking
             api_key.total_requests += 1
-            api_key.last_used = datetime.utcnow()
+            api_key.last_used = datetime.now(timezone.utc)
             await db.commit()
         
         return api_key
@@ -438,12 +438,12 @@ class ZapierService:
                 "webhook_id": webhook.id,
                 "webhook_url": webhook.webhook_url,
                 "status": "success",
-                "triggered_at": datetime.utcnow().isoformat()
+                "triggered_at": datetime.now(timezone.utc).isoformat()
             }
             
             # Update webhook stats
             webhook.total_triggers += 1
-            webhook.last_triggered = datetime.utcnow()
+            webhook.last_triggered = datetime.now(timezone.utc)
             
             triggered_webhooks.append(trigger_result)
         

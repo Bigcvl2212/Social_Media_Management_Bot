@@ -4,7 +4,7 @@ Tests for integration functionality
 
 import pytest
 from unittest.mock import AsyncMock, patch, Mock
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.models.integration import (
     Integration, Campaign, APIKey, ZapierWebhook,
@@ -44,7 +44,7 @@ class TestIntegrationService:
             status=IntegrationStatus.PENDING
         )
         
-        db_mock.add = AsyncMock()
+        db_mock.add = Mock()
         db_mock.commit = AsyncMock()
         db_mock.refresh = AsyncMock()
         
@@ -156,7 +156,7 @@ class TestCampaignService:
             integration_id=1
         )
         
-        db_mock.add = AsyncMock()
+        db_mock.add = Mock()
         db_mock.commit = AsyncMock()
         db_mock.refresh = AsyncMock()
         
@@ -216,7 +216,7 @@ class TestAPIKeyService:
             allowed_endpoints=["/api/public/content", "/api/public/analytics"]
         )
         
-        db_mock.add = AsyncMock()
+        db_mock.add = Mock()
         db_mock.commit = AsyncMock()
         db_mock.refresh = AsyncMock()
         
@@ -241,7 +241,7 @@ class TestAPIKeyService:
             key_value="smm_test_key_123",
             user_id=1,
             is_active=True,
-            expires_at=datetime.utcnow() + timedelta(days=30),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=30),
             total_requests=0
         )
         
@@ -270,7 +270,7 @@ class TestAPIKeyService:
             key_value="smm_expired_key",
             user_id=1,
             is_active=True,
-            expires_at=datetime.utcnow() - timedelta(days=1)  # Expired
+            expires_at=datetime.now(timezone.utc) - timedelta(days=1)  # Expired
         )
         
         mock_result = AsyncMock()
@@ -300,7 +300,7 @@ class TestZapierService:
             payload_template='{"content_id": "{{content_id}}", "platform": "{{platform}}"}'
         )
         
-        db_mock.add = AsyncMock()
+        db_mock.add = Mock()
         db_mock.commit = AsyncMock()
         db_mock.refresh = AsyncMock()
         

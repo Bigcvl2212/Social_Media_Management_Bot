@@ -256,4 +256,7 @@ class TestIntegrationBusinessLogic:
         # Should follow expected format
         assert api_key.startswith("smm_")
         assert "_" in api_key
-        assert len(api_key.split("_")[1]) > 20  # Random part should be substantial
+        
+        # Extract the token part after "smm_"
+        token_part = api_key[4:]  # Remove "smm_" prefix
+        assert len(token_part) > 20  # Random part should be substantial
