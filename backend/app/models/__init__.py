@@ -14,6 +14,18 @@ from .integration import (
     IntegrationType,
     IntegrationStatus
 )
+from .automation import (
+    DirectMessage,
+    DirectMessageLog,
+    CommentManagement,
+    ModerationRule,
+    ModerationLog,
+    AutomationConfig,
+    DirectMessageType,
+    DirectMessageStatus,
+    CommentAction,
+    ModerationAction
+)
 
 __all__ = [
     "User",
@@ -29,4 +41,14 @@ __all__ = [
     "ZapierWebhook",
     "IntegrationType",
     "IntegrationStatus",
+    "DirectMessage",
+    "DirectMessageLog",
+    "CommentManagement",
+    "ModerationRule",
+    "ModerationLog",
+    "AutomationConfig",
+    "DirectMessageType",
+    "DirectMessageStatus",
+    "CommentAction",
+    "ModerationAction",
 ]
