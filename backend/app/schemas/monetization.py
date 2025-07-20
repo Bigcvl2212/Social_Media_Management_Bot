@@ -18,9 +18,9 @@ class BrandBase(BaseModel):
     website: Optional[HttpUrl] = None
     logo_url: Optional[HttpUrl] = None
     industry: BrandType
-    company_size: Optional[str] = Field(None, regex="^(startup|small|medium|large|enterprise)$")
+    company_size: Optional[str] = Field(None, pattern="^(startup|small|medium|large|enterprise)$")
     location: Optional[str] = Field(None, max_length=100)
-    contact_email: str = Field(..., regex=r'^[^@]+@[^@]+\.[^@]+$')
+    contact_email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
     contact_phone: Optional[str] = None
     contact_person: Optional[str] = Field(None, max_length=100)
     social_media_handles: Optional[Dict[str, str]] = None
@@ -41,9 +41,9 @@ class BrandUpdate(BaseModel):
     website: Optional[HttpUrl] = None
     logo_url: Optional[HttpUrl] = None
     industry: Optional[BrandType] = None
-    company_size: Optional[str] = Field(None, regex="^(startup|small|medium|large|enterprise)$")
+    company_size: Optional[str] = Field(None, pattern="^(startup|small|medium|large|enterprise)$")
     location: Optional[str] = Field(None, max_length=100)
-    contact_email: Optional[str] = Field(None, regex=r'^[^@]+@[^@]+\.[^@]+$')
+    contact_email: Optional[str] = Field(None, pattern=r'^[^@]+@[^@]+\.[^@]+$')
     contact_phone: Optional[str] = None
     contact_person: Optional[str] = Field(None, max_length=100)
     social_media_handles: Optional[Dict[str, str]] = None
@@ -143,7 +143,7 @@ class CollaborationBase(BaseModel):
     description: Optional[str] = Field(None, max_length=2000)
     deliverables: Dict[str, Any]
     compensation: Optional[float] = Field(None, ge=0)
-    compensation_type: Optional[str] = Field(None, regex="^(fixed|per_post|revenue_share)$")
+    compensation_type: Optional[str] = Field(None, pattern="^(fixed|per_post|revenue_share)$")
     content_requirements: Optional[Dict[str, Any]] = None
     platforms: List[str] = Field(..., min_items=1)
     start_date: datetime
@@ -170,13 +170,13 @@ class CollaborationUpdate(BaseModel):
     status: Optional[CollaborationStatus] = None
     deliverables: Optional[Dict[str, Any]] = None
     compensation: Optional[float] = Field(None, ge=0)
-    compensation_type: Optional[str] = Field(None, regex="^(fixed|per_post|revenue_share)$")
+    compensation_type: Optional[str] = Field(None, pattern="^(fixed|per_post|revenue_share)$")
     content_requirements: Optional[Dict[str, Any]] = None
     platforms: Optional[List[str]] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     content_ids: Optional[List[int]] = None
-    approval_status: Optional[str] = Field(None, regex="^(pending|approved|rejected)$")
+    approval_status: Optional[str] = Field(None, pattern="^(pending|approved|rejected)$")
     performance_metrics: Optional[Dict[str, Any]] = None
     terms_accepted: Optional[bool] = None
 
@@ -210,7 +210,7 @@ class AffiliateLinkBase(BaseModel):
     product_description: Optional[str] = Field(None, max_length=1000)
     product_image_url: Optional[HttpUrl] = None
     commission_rate: float = Field(..., ge=0, le=100)
-    commission_type: str = Field(default="percentage", regex="^(percentage|fixed|tiered)$")
+    commission_type: str = Field(default="percentage", pattern="^(percentage|fixed|tiered)$")
     commission_settings: Optional[Dict[str, Any]] = None
     expires_at: Optional[datetime] = None
 
@@ -229,7 +229,7 @@ class AffiliateLinkUpdate(BaseModel):
     product_description: Optional[str] = Field(None, max_length=1000)
     product_image_url: Optional[HttpUrl] = None
     commission_rate: Optional[float] = Field(None, ge=0, le=100)
-    commission_type: Optional[str] = Field(None, regex="^(percentage|fixed|tiered)$")
+    commission_type: Optional[str] = Field(None, pattern="^(percentage|fixed|tiered)$")
     commission_settings: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
     expires_at: Optional[datetime] = None

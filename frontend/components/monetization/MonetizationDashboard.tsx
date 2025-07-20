@@ -13,10 +13,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   CurrencyDollarIcon, 
-  HandshakeIcon,
+  BuildingOfficeIcon,
   LinkIcon,
   ChartBarIcon,
-  TrendingUpIcon,
+  ArrowTrendingUpIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline';
 
@@ -156,7 +156,7 @@ export default function MonetizationDashboard() {
               <CurrencyDollarIcon className="h-12 w-12 text-green-500" />
             </div>
             <div className="mt-4 flex items-center">
-              <TrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+              <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
               <span className="text-sm text-green-600">+12.5% from last month</span>
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function MonetizationDashboard() {
                 <p className="text-sm font-medium text-gray-600">Active Collaborations</p>
                 <p className="text-2xl font-semibold text-blue-600">{stats.activeCollaborations}</p>
               </div>
-              <HandshakeIcon className="h-12 w-12 text-blue-500" />
+              <BuildingOfficeIcon className="h-12 w-12 text-blue-500" />
             </div>
             <div className="mt-4">
               <span className="text-sm text-gray-600">{stats.pendingCollaborations} pending approval</span>
@@ -213,7 +213,7 @@ export default function MonetizationDashboard() {
                   <div key={activity.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className="flex-shrink-0">
-                        {activity.type === 'collaboration' && <HandshakeIcon className="h-8 w-8 text-blue-500" />}
+                        {activity.type === 'collaboration' && <BuildingOfficeIcon className="h-8 w-8 text-blue-500" />}
                         {activity.type === 'affiliate' && <LinkIcon className="h-8 w-8 text-purple-500" />}
                         {activity.type === 'campaign' && <CalendarIcon className="h-8 w-8 text-green-500" />}
                       </div>

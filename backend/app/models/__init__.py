@@ -12,7 +12,7 @@ from .content import Content, ContentStatus
 from .analytics import Analytics
 from .integration import (
     Integration,
-    Campaign,
+    IntegrationCampaign,
     APIKey,
     ZapierWebhook,
     IntegrationType,
@@ -40,7 +40,7 @@ __all__ = [
     "ContentStatus",
     "Analytics",
     "Integration",
-    "Campaign",
+    "IntegrationCampaign",
     "APIKey",
     "ZapierWebhook",
     "IntegrationType",

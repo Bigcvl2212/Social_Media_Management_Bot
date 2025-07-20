@@ -6,7 +6,7 @@ import pytest
 from datetime import datetime, timedelta
 
 from app.models.integration import (
-    Integration, Campaign, APIKey, ZapierWebhook,
+    Integration, IntegrationCampaign, APIKey, ZapierWebhook,
     IntegrationType, IntegrationStatus
 )
 from app.schemas.integration import (
@@ -38,7 +38,7 @@ class TestIntegrationModels:
 
     def test_campaign_model_creation(self):
         """Test creating a Campaign model instance"""
-        campaign = Campaign(
+        campaign = IntegrationCampaign(
             name="Test Campaign",
             type="email",
             content="Test email content",

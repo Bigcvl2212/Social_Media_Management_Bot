@@ -52,7 +52,7 @@ class User(Base):
     content = relationship("Content", back_populates="created_by_user", cascade="all, delete-orphan")
 
     integrations = relationship("Integration", back_populates="user", cascade="all, delete-orphan")
-    campaigns = relationship("Campaign", back_populates="user", cascade="all, delete-orphan")
+    campaigns = relationship("IntegrationCampaign", back_populates="user", cascade="all, delete-orphan")
     api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
     zapier_webhooks = relationship("ZapierWebhook", back_populates="user", cascade="all, delete-orphan")
 

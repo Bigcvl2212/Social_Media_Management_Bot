@@ -54,18 +54,21 @@ class Integration(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_sync = Column(DateTime(timezone=True), nullable=True)
     
+    # Table configuration
+    __table_args__ = {'extend_existing': True}
+    
     # Relationships
     user = relationship("User", back_populates="integrations")
-    campaigns = relationship("Campaign", back_populates="integration", cascade="all, delete-orphan")
+    campaigns = relationship("IntegrationCampaign", back_populates="integration", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Integration(id={self.id}, name='{self.name}', type='{self.type}', provider='{self.provider}')>"
 
 
-class Campaign(Base):
+class IntegrationCampaign(Base):
     """Campaign model for email/SMS campaigns"""
     
-    __tablename__ = "campaigns"
+    __tablename__ = "integration_campaigns"
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
@@ -92,7 +95,7 @@ class Campaign(Base):
     user = relationship("User", back_populates="campaigns")
     
     def __repr__(self):
-        return f"<Campaign(id={self.id}, name='{self.name}', type='{self.type}')>"
+        return f"<IntegrationCampaign(id={self.id}, name='{self.name}', type='{self.type}')>"
 
 
 class APIKey(Base):

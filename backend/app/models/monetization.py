@@ -107,6 +107,7 @@ class Brand(Base):
     user = relationship("User", back_populates="brand_profiles")
     campaigns = relationship("Campaign", back_populates="brand")
     collaborations = relationship("Collaboration", back_populates="brand")
+    affiliate_links = relationship("AffiliateLink", back_populates="brand")
     
     def __repr__(self):
         return f"<Brand(id={self.id}, name='{self.name}', industry='{self.industry}')>"
@@ -152,6 +153,9 @@ class Campaign(Base):
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Table configuration
+    __table_args__ = {'extend_existing': True}
     
     # Relationships
     brand = relationship("Brand", back_populates="campaigns")
