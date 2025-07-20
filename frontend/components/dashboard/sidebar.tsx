@@ -74,10 +74,10 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
                   <div className="absolute left-full top-0 flex w-16 justify-center pt-5">
                     <button
                       type="button"
-                      className="-m-2.5 p-2.5 rounded-full glass hover:bg-white/20 transition-colors duration-200"
+                      className="-m-2.5 p-2.5 rounded-full glass hover:bg-white/20 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                       onClick={() => setOpen(false)}
+                      aria-label="Close navigation menu"
                     >
-                      <span className="sr-only">Close sidebar</span>
                       <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
                     </button>
                   </div>
@@ -103,14 +103,14 @@ function SidebarContent({ pathname }: { pathname: string }) {
       <div className="flex h-16 shrink-0 items-center">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">S</span>
+            <span className="text-white font-bold text-sm" aria-hidden="true">S</span>
           </div>
           <h1 className="text-xl font-bold gradient-text">
             SocialBot
           </h1>
         </div>
       </div>
-      <nav className="flex flex-1 flex-col">
+      <nav className="flex flex-1 flex-col" role="navigation" aria-label="Main navigation">
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
             <ul role="list" className="-mx-2 space-y-2">
@@ -122,8 +122,9 @@ function SidebarContent({ pathname }: { pathname: string }) {
                       pathname === item.href
                         ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border-r-2 border-blue-400"
                         : "text-gray-300 hover:text-white hover:bg-white/5",
-                      "group flex gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 interactive-card"
+                      "group flex gap-x-3 rounded-xl p-3 text-sm leading-6 font-semibold transition-all duration-300 interactive-card focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
                     )}
+                    aria-current={pathname === item.href ? 'page' : undefined}
                   >
                     <item.icon
                       className={clsx(
@@ -134,7 +135,7 @@ function SidebarContent({ pathname }: { pathname: string }) {
                       )}
                       aria-hidden="true"
                     />
-                    {item.name}
+                    <span>{item.name}</span>
                   </Link>
                 </li>
               ))}
@@ -143,9 +144,9 @@ function SidebarContent({ pathname }: { pathname: string }) {
           
           {/* Add AI Assistant Section */}
           <li className="mt-auto">
-            <div className="glass rounded-xl p-4 border border-white/10">
+            <div className="glass rounded-xl p-4 border border-white/10" role="region" aria-label="AI Assistant Status">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center animate-glow">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center animate-glow" aria-hidden="true">
                   <span className="text-white font-bold text-xs">AI</span>
                 </div>
                 <div>
