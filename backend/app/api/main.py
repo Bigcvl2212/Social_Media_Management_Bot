@@ -6,10 +6,15 @@ from fastapi import APIRouter
 
 
 
+from app.api.routes import auth, users, social_accounts, content, analytics, upload, curation
+
+
+
 from app.api.routes import auth, users, social_accounts, content, analytics, upload, automation
 
 
 from app.api.routes import auth, users, social_accounts, content, analytics, upload, ai_multimodal
+
 
 from app.api.routes import (
     auth, users, social_accounts, content, analytics, upload,
@@ -37,6 +42,9 @@ api_router.include_router(social_accounts.router, prefix="/social-accounts", tag
 api_router.include_router(content.router, prefix="/content", tags=["content"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
+
+api_router.include_router(curation.router, prefix="/curation", tags=["content-curation"])
+
 
 
 

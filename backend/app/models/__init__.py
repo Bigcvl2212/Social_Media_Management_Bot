@@ -1,3 +1,8 @@
+
+from app.models.user import User
+from app.models.curation import CurationCollection
+from app.models.automation import DirectMessage, CommentManagement, ModerationRule, ModerationLog, AutomationConfig
+
 """
 Database models for the Social Media Management Bot
 """
@@ -52,3 +57,4 @@ __all__ = [
     "CommentAction",
     "ModerationAction",
 ]
+
