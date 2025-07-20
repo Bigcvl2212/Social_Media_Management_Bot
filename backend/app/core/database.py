@@ -2,8 +2,8 @@
 Database configuration and session management
 """
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_session
+from sqlalchemy.orm import sessionmaker, declarative_base
 import logging
 
 from app.core.config import settings
@@ -28,16 +28,15 @@ else:
     )
 
 # Create session factory
-AsyncSessionLocal = async_sessionmaker(
+AsyncSessionLocal = sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False
 )
 
 
-class Base(DeclarativeBase):
-    """Base class for all database models"""
-    pass
+# Create declarative base
+Base = declarative_base()
 
 
 async def get_db() -> AsyncSession:
