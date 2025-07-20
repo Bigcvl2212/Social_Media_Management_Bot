@@ -21,6 +21,28 @@ export interface CurationCollection {
   items_count: number;
 }
 
+export interface ItemData {
+  hashtag?: string;
+  audio_id?: string;
+  audio_title?: string;
+  engagement_rate?: number;
+  view_count?: number;
+  like_count?: number;
+  share_count?: number;
+  growth_rate?: string;
+  [key: string]: unknown;
+}
+
+export interface AIInsights {
+  viral_potential_reasons?: string[];
+  optimization_tips?: string[];
+  best_posting_times?: string[];
+  target_audience?: string;
+  content_score?: number;
+  trend_alignment?: number;
+  [key: string]: unknown;
+}
+
 export interface CurationItem {
   id: number;
   collection_id: number;
@@ -31,11 +53,11 @@ export interface CurationItem {
   source_url?: string;
   source_platform?: string;
   thumbnail_url?: string;
-  item_data?: any;
+  item_data?: ItemData;
   user_notes?: string;
   user_rating?: number;
   user_tags?: string[];
-  ai_insights?: any;
+  ai_insights?: AIInsights;
   viral_potential_score?: number;
   times_used: number;
   last_used_at?: string;
@@ -62,6 +84,18 @@ export interface TrendWatch {
   updated_at?: string;
 }
 
+export interface TrendData {
+  hashtag?: string;
+  volume?: number;
+  growth_rate?: string;
+  engagement_rate?: number;
+  sentiment?: string;
+  geographic_data?: Record<string, unknown>;
+  demographic_data?: Record<string, unknown>;
+  related_trends?: string[];
+  [key: string]: unknown;
+}
+
 export interface TrendAlert {
   id: number;
   trend_watch_id: number;
@@ -70,7 +104,7 @@ export interface TrendAlert {
   alert_type: string;
   current_volume?: number;
   growth_rate?: string;
-  trend_data?: any;
+  trend_data?: TrendData;
   is_read: boolean;
   is_dismissed: boolean;
   auto_saved_to_collection: boolean;
@@ -192,7 +226,7 @@ class CurationAPI {
     source_url?: string;
     source_platform?: string;
     thumbnail_url?: string;
-    item_data?: any;
+    item_data?: ItemData;
     user_notes?: string;
     user_rating?: number;
     user_tags?: string[];
@@ -305,21 +339,21 @@ class CurationAPI {
   }
 
   // Real-time Monitoring
-  async getRealtimeHashtags(platforms: string[]): Promise<any> {
+  async getRealtimeHashtags(platforms: string[]): Promise<HashtagTrend[]> {
     const queryParams = new URLSearchParams();
     platforms.forEach(platform => queryParams.append('platforms', platform));
     
     return this.request(`/realtime/hashtags?${queryParams}`);
   }
 
-  async getRealtimeSounds(platforms: string[]): Promise<any> {
+  async getRealtimeSounds(platforms: string[]): Promise<AudioTrend[]> {
     const queryParams = new URLSearchParams();
     platforms.forEach(platform => queryParams.append('platforms', platform));
     
     return this.request(`/realtime/sounds?${queryParams}`);
   }
 
-  async getViralSpikes(platform: string, threshold?: number): Promise<any> {
+  async getViralSpikes(platform: string, threshold?: number): Promise<ViralSpike[]> {
     const queryParams = new URLSearchParams();
     queryParams.set('platform', platform);
     if (threshold) queryParams.set('threshold', threshold.toString());
@@ -327,11 +361,11 @@ class CurationAPI {
     return this.request(`/realtime/viral-spikes?${queryParams}`);
   }
 
-  async getPlatformInsights(platform: string): Promise<any> {
+  async getPlatformInsights(platform: string): Promise<PlatformInsights> {
     return this.request(`/realtime/platform-insights?platform=${platform}`);
   }
 
-  async createSmartAlerts(keywords: string[], platforms: string[]): Promise<any> {
+  async createSmartAlerts(keywords: string[], platforms: string[]): Promise<SmartAlert[]> {
     const queryParams = new URLSearchParams();
     keywords.forEach(keyword => queryParams.append('keywords', keyword));
     platforms.forEach(platform => queryParams.append('platforms', platform));
@@ -353,7 +387,7 @@ class CurationAPI {
     content_types?: string[];
     region?: string;
     time_range?: string;
-  }): Promise<any[]> {
+  }): Promise<DiscoveredContent[]> {
     return this.request('/discover-trending', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -374,6 +408,70 @@ class CurationAPI {
       body: JSON.stringify(data),
     });
   }
+
+}
+
+export interface HashtagTrend {
+  hashtag: string;
+  platform: string;
+  volume: number;
+  growth_rate: string;
+  engagement_rate?: number;
+  trending_rank?: number;
+  geographic_data?: Record<string, unknown>;
+}
+
+export interface AudioTrend {
+  audio_id: string;
+  title: string;
+  artist?: string;
+  platform: string;
+  usage_count: number;
+  growth_rate: string;
+  duration?: number;
+  genre?: string;
+}
+
+export interface ViralSpike {
+  content_id: string;
+  platform: string;
+  content_type: string;
+  current_engagement: number;
+  growth_rate: string;
+  spike_detected_at: string;
+  engagement_velocity: number;
+  viral_score: number;
+}
+
+export interface PlatformInsights {
+  platform: string;
+  trending_hashtags: HashtagTrend[];
+  trending_sounds?: AudioTrend[];
+  viral_content: ViralSpike[];
+  platform_activity_level: string;
+  best_posting_times: string[];
+  audience_demographics: Record<string, unknown>;
+}
+
+export interface SmartAlert {
+  id: string;
+  alert_type: string;
+  keywords: string[];
+  platforms: string[];
+  trend_data: TrendData;
+  confidence_score: number;
+  created_at: string;
+}
+
+export interface DiscoveredContent {
+  content_id: string;
+  title: string;
+  platform: string;
+  content_type: string;
+  engagement_metrics: Record<string, number>;
+  viral_potential_score: number;
+  trending_keywords: string[];
+  created_at: string;
 }
 
 export const curationAPI = new CurationAPI();

@@ -1,17 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
   FolderIcon,
   BookmarkIcon,
-  TrendingUpIcon,
+  ArrowTrendingUpIcon,
   EyeIcon,
   TagIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
 import { curationAPI, CurationCollection, CurationItem, InspirationBoardSummary } from '@/lib/curation-api';
+
+interface CreateCollectionData {
+  name: string;
+  description?: string;
+  collection_type: string;
+  is_public?: boolean;
+  color_theme?: string;
+  tags?: string[];
+  auto_curate_trends?: boolean;
+  auto_curate_keywords?: string[];
+}
 
 export default function InspirationBoardPage() {
   const [collections, setCollections] = useState<CurationCollection[]>([]);
@@ -22,11 +33,18 @@ export default function InspirationBoardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateCollection, setShowCreateCollection] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const loadCollectionItems = useCallback(async (collectionId: number) => {
+    try {
+      const itemsData = await curationAPI.getCollectionItems(collectionId, {
+        search: searchTerm || undefined
+      });
+      setItems(itemsData);
+    } catch (error) {
+      console.error('Error loading collection items:', error);
+    }
+  }, [searchTerm]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [collectionsData, summaryData] = await Promise.all([
@@ -46,25 +64,18 @@ export default function InspirationBoardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCollection, loadCollectionItems]);
 
-  const loadCollectionItems = async (collectionId: number) => {
-    try {
-      const itemsData = await curationAPI.getCollectionItems(collectionId, {
-        search: searchTerm || undefined
-      });
-      setItems(itemsData);
-    } catch (error) {
-      console.error('Error loading collection items:', error);
-    }
-  };
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleCollectionSelect = (collection: CurationCollection) => {
     setSelectedCollection(collection);
     loadCollectionItems(collection.id);
   };
 
-  const handleCreateCollection = async (collectionData: any) => {
+  const handleCreateCollection = async (collectionData: CreateCollectionData) => {
     try {
       const newCollection = await curationAPI.createCollection(collectionData);
       setCollections([...collections, newCollection]);
@@ -81,7 +92,7 @@ export default function InspirationBoardPage() {
       case 'template_collection':
         return FolderIcon;
       case 'trend_watchlist':
-        return TrendingUpIcon;
+        return ArrowTrendingUpIcon;
       case 'content_ideas':
         return EyeIcon;
       default:
@@ -155,7 +166,7 @@ export default function InspirationBoardPage() {
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center">
-                <TrendingUpIcon className="h-8 w-8 text-purple-600" />
+                <ArrowTrendingUpIcon className="h-8 w-8 text-purple-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Trend Watches</p>
                   <p className="text-2xl font-semibold text-gray-900">{summary.active_trend_watches}</p>
@@ -315,7 +326,7 @@ function CreateCollectionModal({
   onSubmit 
 }: { 
   onClose: () => void; 
-  onSubmit: (data: any) => void; 
+  onSubmit: (data: CreateCollectionData) => void; 
 }) {
   const [formData, setFormData] = useState({
     name: '',

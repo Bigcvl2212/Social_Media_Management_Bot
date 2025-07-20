@@ -10,7 +10,6 @@ import {
   XCircleIcon, 
   ExclamationTriangleIcon,
   InformationCircleIcon,
-  DocumentTextIcon,
   PhotoIcon,
   VideoCameraIcon
 } from '@heroicons/react/24/outline';

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   HashtagIcon,
   MusicalNoteIcon,
   FireIcon,
-  TrendingUpIcon,
+  ArrowTrendingUpIcon,
   BellIcon,
   ClockIcon,
   EyeIcon,
@@ -41,8 +41,8 @@ export default function TrendDiscoveryPage() {
   const [selectedPlatforms, setSelectedPlatforms] = useState(['tiktok', 'instagram']);
   const [trendingData, setTrendingData] = useState<Record<string, TrendingData>>({});
   const [loading, setLoading] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const platforms = [
     { id: 'tiktok', name: 'TikTok', color: 'bg-black' },
@@ -52,21 +52,7 @@ export default function TrendDiscoveryPage() {
     { id: 'linkedin', name: 'LinkedIn', color: 'bg-blue-700' }
   ];
 
-  useEffect(() => {
-    loadTrendingData();
-    
-    // Set up auto-refresh every 5 minutes
-    refreshIntervalRef.current = setInterval(loadTrendingData, 5 * 60 * 1000);
-    
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
-      }
-    };
-  }, [selectedPlatforms]);
-
-  const loadTrendingData = async () => {
+  const loadTrendingData = useCallback(async () => {
     setLoading(true);
     
     try {
@@ -76,19 +62,35 @@ export default function TrendDiscoveryPage() {
       const hashtagPromises = selectedPlatforms.map(async (platform) => {
         try {
           const hashtagData = await curationAPI.getRealtimeHashtags([platform]);
-          const platformInsights = await curationAPI.getPlatformInsights(platform);
           const viralSpikes = await curationAPI.getViralSpikes(platform);
           
           data[platform] = {
             platform,
-            hashtags: hashtagData.hashtag_data?.[platform] || [],
-            viral_spikes: viralSpikes.viral_spikes || []
+            hashtags: hashtagData.map(trend => ({
+              tag: trend.hashtag,
+              volume: trend.volume,
+              growth: trend.growth_rate,
+              momentum: trend.growth_rate.includes('+') ? 'rising' : 'declining',
+              engagement_rate: trend.engagement_rate || 0
+            })),
+            viral_spikes: viralSpikes.map(spike => ({
+              content_id: spike.content_id,
+              title: spike.content_type,
+              creator: 'Unknown',
+              current_engagement: spike.current_engagement,
+              spike_multiplier: parseFloat(spike.growth_rate.replace('%', '')) / 100
+            }))
           };
           
           // Load sounds for TikTok and Instagram
           if (platform === 'tiktok' || platform === 'instagram') {
             const soundData = await curationAPI.getRealtimeSounds([platform]);
-            data[platform].sounds = soundData.sound_data?.[platform] || [];
+            data[platform].sounds = soundData.map(sound => ({
+              name: sound.title,
+              artist: sound.artist || 'Unknown',
+              usage: sound.usage_count,
+              growth: sound.growth_rate
+            }));
           }
         } catch (error) {
           console.error(`Error loading data for ${platform}:`, error);
@@ -108,7 +110,21 @@ export default function TrendDiscoveryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedPlatforms]);
+
+  useEffect(() => {
+    loadTrendingData();
+    
+    // Set up auto-refresh every 5 minutes
+    refreshIntervalRef.current = setInterval(loadTrendingData, 5 * 60 * 1000);
+    
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
+  }, [loadTrendingData]);
 
   const handlePlatformToggle = (platformId: string) => {
     setSelectedPlatforms(prev => 
@@ -127,11 +143,11 @@ export default function TrendDiscoveryPage() {
   const getMomentumIcon = (momentum: string) => {
     switch (momentum) {
       case 'rising':
-        return <TrendingUpIcon className="h-4 w-4 text-green-500" />;
+        return <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />;
       case 'declining':
-        return <TrendingUpIcon className="h-4 w-4 text-red-500 transform rotate-180" />;
+        return <ArrowTrendingUpIcon className="h-4 w-4 text-red-500 transform rotate-180" />;
       default:
-        return <TrendingUpIcon className="h-4 w-4 text-yellow-500" />;
+        return <ArrowTrendingUpIcon className="h-4 w-4 text-yellow-500" />;
     }
   };
 
