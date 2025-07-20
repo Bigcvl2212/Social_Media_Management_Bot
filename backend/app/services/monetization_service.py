@@ -237,13 +237,14 @@ class MonetizationService:
         return collaboration
     
     # Affiliate Link Management
-    def generate_affiliate_code(self, length: int = 8) -> str:
-        """Generate a unique affiliate code"""
-        while True:
+    def generate_affiliate_code(self, length: int = 8, max_retries: int = 100) -> str:
+        """Generate a unique affiliate code with a retry limit"""
+        for _ in range(max_retries):
             code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(length))
             existing = self.db.query(AffiliateLink).filter(AffiliateLink.affiliate_code == code).first()
             if not existing:
                 return code
+        raise RuntimeError("Failed to generate a unique affiliate code after maximum retries")
     
     def create_affiliate_link(self, link_data: AffiliateLinkCreate, user_id: int) -> AffiliateLink:
         """Create a new affiliate link"""
