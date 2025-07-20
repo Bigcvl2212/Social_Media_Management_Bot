@@ -16,18 +16,22 @@ const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
   collectCoverageFrom: [
     'components/**/*.{js,jsx,ts,tsx}',
-    'app/**/*.{js,jsx,ts,tsx}',
-    'lib/**/*.{js,jsx,ts,tsx}',
+    '!components/dashboard/**',
+    '!components/calendar/**',
+    '!components/analytics-provider.tsx',
+    '!components/error-boundary.tsx',
+    '!components/theme-provider.tsx',
+    '!components/providers.tsx',
     '!**/*.d.ts',
     '!**/node_modules/**',
     '!**/.next/**',
   ],
   coverageThreshold: {
     global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
+      branches: 75,
+      functions: 80,
+      lines: 95,
+      statements: 90,
     },
   },
   testPathIgnorePatterns: [

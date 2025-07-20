@@ -16,7 +16,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const structuredData = generateStructuredData('home');
+  const structuredData = generateStructuredData();
   
   return (
     <html lang="en" className="h-full">
