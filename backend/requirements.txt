@@ -44,3 +44,10 @@ pytest-asyncio==0.21.1
 black==23.11.0
 flake8==6.1.0
 mypy==1.7.1
+
+# Accessibility and Content Analysis
+colorama==0.4.6
+colour==0.1.5
+textstat==0.7.3
+langdetect==1.0.9
+python-magic==0.4.27
