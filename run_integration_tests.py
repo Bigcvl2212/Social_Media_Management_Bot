@@ -49,6 +49,7 @@ def print_banner():
     ║  • Social Media Account Linking                               ║
     ║  • Content Posting & Scheduling                               ║
     ║  • Analytics Retrieval & Reporting                            ║
+    ║  • Monetization & Brand Collaboration                         ║
     ╚═══════════════════════════════════════════════════════════════╝
     """
     print(banner)
@@ -73,7 +74,8 @@ def validate_environment():
         "test_authentication.py",
         "test_social_accounts.py", 
         "test_content_posting.py",
-        "test_analytics.py"
+        "test_analytics.py",
+        "test_monetization.py"
     ]
     
     integration_dir = project_root / "tests" / "integration"
@@ -119,7 +121,8 @@ def run_test_suite(suite_name=None, platform=None, verbose=False, html_report=Fa
             "authentication": "test_authentication.py",
             "social_accounts": "test_social_accounts.py",
             "content": "test_content_posting.py", 
-            "analytics": "test_analytics.py"
+            "analytics": "test_analytics.py",
+            "monetization": "test_monetization.py"
         }
         
         if suite_name in test_file_map:
@@ -182,7 +185,8 @@ def generate_test_summary():
         ("Authentication & User Management", "Validates user registration, login, permissions"),
         ("Social Media Account Linking", "Tests OAuth flows and account management"),
         ("Content Posting & Scheduling", "Verifies posting and scheduling functionality"),
-        ("Analytics Retrieval", "Tests analytics data collection and reporting")
+        ("Analytics Retrieval", "Tests analytics data collection and reporting"),
+        ("Monetization & Brand Collaboration", "Tests brand profiles, campaigns, and affiliate marketing")
     ]
     
     for suite_name, description in test_suites:
@@ -195,6 +199,9 @@ def generate_test_summary():
     print("   • Multi-platform social media integration")
     print("   • Content management and automation")
     print("   • Real-time analytics and insights")
+    print("   • Brand collaboration marketplace")
+    print("   • Campaign management and tracking")
+    print("   • Affiliate marketing and reporting")
     print("   • Cross-platform functionality")
     print("   • Error handling and edge cases")
 
@@ -211,7 +218,7 @@ def main():
     parser.add_argument("--coverage", action="store_true", help="Include coverage analysis")
     parser.add_argument("--platform", help="Run tests for specific platform only")
     parser.add_argument("--suite", help="Run specific test suite only", 
-                        choices=["authentication", "social_accounts", "content", "analytics"])
+                        choices=["authentication", "social_accounts", "content", "analytics", "monetization"])
     
     args = parser.parse_args()
     
