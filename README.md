@@ -32,6 +32,13 @@ A next-generation Social Media Management Bot that enables multiple users and te
 - **Engagement Optimization**: ML-driven best time recommendations
 - **Brand Voice**: Configurable AI responses maintaining consistent brand voice
 
+### 🎭 Multi-Modal AI Features (New!)
+- **AI Voiceover & Dubbing**: Multi-language synthesis with voice cloning
+- **Image-to-Video Generation**: Transform static images into dynamic videos
+- **Enhanced Meme Generator**: Trending, brand-relevant memes with viral analysis
+- **Short-Form Video Editor**: AI-powered editing for Reels, TikTok, and Shorts
+- **Complete Content Packages**: Multi-platform content creation in one request
+
 ## 🏗️ Technical Architecture
 
 ### Backend Stack
@@ -405,6 +412,13 @@ POST /api/v1/social-accounts/connect/{platform}  # Connect account
 Analytics:
 GET  /api/v1/analytics        # Get analytics data
 GET  /api/v1/analytics/dashboard  # Dashboard metrics
+
+AI Multi-Modal Features:
+POST /api/v1/ai-multimodal/ai-voiceover/generate  # AI voiceover
+POST /api/v1/ai-multimodal/image-to-video/create  # Image to video
+POST /api/v1/ai-multimodal/enhanced-memes/trending  # Trending memes
+POST /api/v1/ai-multimodal/short-form-video/create  # Short-form videos
+POST /api/v1/ai-multimodal/multi-modal/complete-package  # Complete package
 ```
 
 ## 🧪 Testing
