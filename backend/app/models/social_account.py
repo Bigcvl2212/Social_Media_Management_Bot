@@ -67,6 +67,11 @@ class SocialAccount(Base):
     # Relationships
     user = relationship("User", back_populates="social_accounts")
     content_schedules = relationship("ContentSchedule", back_populates="social_account")
+    direct_messages = relationship("DirectMessage", back_populates="social_account", cascade="all, delete-orphan")
+    comment_management = relationship("CommentManagement", back_populates="social_account", cascade="all, delete-orphan")
+    moderation_rules = relationship("ModerationRule", back_populates="social_account", cascade="all, delete-orphan")
+    moderation_logs = relationship("ModerationLog", back_populates="social_account", cascade="all, delete-orphan")
+    automation_config = relationship("AutomationConfig", back_populates="social_account", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<SocialAccount(id={self.id}, platform='{self.platform}', username='{self.username}')>"
