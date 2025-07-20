@@ -316,8 +316,7 @@ class MonetizationService:
         link.last_clicked = datetime.utcnow()
         
         # Update analytics data
-        if not link.analytics_data:
-            link.analytics_data = {"daily_clicks": {}, "referrers": {}}
+        self._initialize_analytics_data(link)
         
         today = datetime.utcnow().date().isoformat()
         if today not in link.analytics_data["daily_clicks"]:
