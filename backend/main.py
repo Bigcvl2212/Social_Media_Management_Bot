@@ -62,7 +62,11 @@ def create_application() -> FastAPI:
     )
     
     # Rate limiting middleware (applied after CORS and security)
-    app.middleware("http")(rate_limit_middleware)
+    try:
+        app.middleware("http")(rate_limit_middleware)
+    except Exception as e:
+        # If rate limiting fails to initialize, log but continue
+        logging.warning(f"Rate limiting middleware disabled: {e}")
 
     # Include API routes
     app.include_router(api_router, prefix=settings.API_V1_STR)

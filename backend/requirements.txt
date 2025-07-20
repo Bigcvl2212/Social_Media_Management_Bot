@@ -46,7 +46,6 @@ flake8==6.1.0
 mypy==1.7.1
 
 # Security and Monitoring
-safety==2.3.5
 sentry-sdk[fastapi]==1.38.0
 
 # Accessibility and Content Analysis
