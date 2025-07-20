@@ -12,7 +12,7 @@ from sqlalchemy import select, and_
 from fastapi import HTTPException
 
 from app.models.integration import (
-    Integration, Campaign, APIKey, ZapierWebhook,
+    Integration, IntegrationCampaign, APIKey, ZapierWebhook,
     IntegrationType, IntegrationStatus
 )
 from app.models.user import User
@@ -201,7 +201,7 @@ class CampaignService:
         db: AsyncSession,
         campaign_data: CampaignCreate,
         user_id: int
-    ) -> Campaign:
+    ) -> IntegrationCampaign:
         """Create a new campaign"""
         
         # Verify the integration exists and belongs to the user
@@ -224,7 +224,7 @@ class CampaignService:
                 detail="Integration must be email or SMS type for campaigns"
             )
         
-        campaign = Campaign(
+        campaign = IntegrationCampaign(
             name=campaign_data.name,
             type=campaign_data.type,
             subject=campaign_data.subject,
@@ -246,12 +246,12 @@ class CampaignService:
         db: AsyncSession,
         user_id: int,
         campaign_type: Optional[str] = None
-    ) -> List[Campaign]:
+    ) -> List[IntegrationCampaign]:
         """Get all campaigns for a user"""
-        query = select(Campaign).where(Campaign.user_id == user_id)
+        query = select(IntegrationCampaign).where(IntegrationCampaign.user_id == user_id)
         
         if campaign_type:
-            query = query.where(Campaign.type == campaign_type)
+            query = query.where(IntegrationCampaign.type == campaign_type)
         
         result = await db.execute(query)
         return result.scalars().all()
@@ -264,10 +264,10 @@ class CampaignService:
     ) -> Dict[str, Any]:
         """Send a campaign"""
         campaign_result = await db.execute(
-            select(Campaign).where(
+            select(IntegrationCampaign).where(
                 and_(
-                    Campaign.id == campaign_id,
-                    Campaign.user_id == user_id
+                    IntegrationCampaign.id == campaign_id,
+                    IntegrationCampaign.user_id == user_id
                 )
             )
         )

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch, Mock
 from datetime import datetime, timedelta, timezone
 
 from app.models.integration import (
-    Integration, Campaign, APIKey, ZapierWebhook,
+    Integration, IntegrationCampaign, APIKey, ZapierWebhook,
     IntegrationType, IntegrationStatus
 )
 from app.schemas.integration import (
@@ -176,7 +176,7 @@ class TestCampaignService:
         db_mock = AsyncMock()
         
         # Mock campaign
-        mock_campaign = Campaign(
+        mock_campaign = IntegrationCampaign(
             id=1,
             name="Test Campaign",
             type="email",
@@ -378,7 +378,7 @@ class TestIntegrationModels:
 
     def test_campaign_model_creation(self):
         """Test creating a Campaign model instance"""
-        campaign = Campaign(
+        campaign = IntegrationCampaign(
             name="Test Campaign",
             type="email",
             content="Test email content",

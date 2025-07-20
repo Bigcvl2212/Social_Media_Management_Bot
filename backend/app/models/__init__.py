@@ -1,7 +1,12 @@
 
+
+# Import all models here to ensure they are registered with SQLAlchemy
+from .monetization import Brand, Campaign, Collaboration, AffiliateLink
+
 from app.models.user import User
 from app.models.curation import CurationCollection
 from app.models.automation import DirectMessage, CommentManagement, ModerationRule, ModerationLog, AutomationConfig
+
 
 """
 Database models for the Social Media Management Bot
@@ -13,7 +18,7 @@ from .content import Content, ContentStatus
 from .analytics import Analytics
 from .integration import (
     Integration,
-    Campaign,
+    IntegrationCampaign,
     APIKey,
     ZapierWebhook,
     IntegrationType,
@@ -41,7 +46,7 @@ __all__ = [
     "ContentStatus",
     "Analytics",
     "Integration",
-    "Campaign",
+    "IntegrationCampaign",
     "APIKey",
     "ZapierWebhook",
     "IntegrationType",

@@ -56,7 +56,7 @@ class User(Base):
     trend_watches = relationship("TrendWatch", back_populates="user", cascade="all, delete-orphan")
 
     integrations = relationship("Integration", back_populates="user", cascade="all, delete-orphan")
-    campaigns = relationship("Campaign", back_populates="user", cascade="all, delete-orphan")
+    campaigns = relationship("IntegrationCampaign", back_populates="user", cascade="all, delete-orphan")
     api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
     zapier_webhooks = relationship("ZapierWebhook", back_populates="user", cascade="all, delete-orphan")
 
@@ -67,6 +67,11 @@ class User(Base):
     moderation_logs = relationship("ModerationLog", back_populates="user", cascade="all, delete-orphan")
     automation_config = relationship("AutomationConfig", back_populates="user", cascade="all, delete-orphan")
 
+    
+    # Monetization relationships
+    brand_profiles = relationship("Brand", back_populates="user", cascade="all, delete-orphan")
+    collaborations = relationship("Collaboration", back_populates="influencer", cascade="all, delete-orphan")
+    affiliate_links = relationship("AffiliateLink", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
