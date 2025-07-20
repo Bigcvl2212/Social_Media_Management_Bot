@@ -92,14 +92,6 @@ class CurationItem(Base):
     
     # Item-specific data
     item_data = Column(JSON, nullable=True)  # Store type-specific data
-    """
-    Examples of item_data:
-    - Trend: {"volume": 1000000, "growth_rate": "+50%", "hashtags": ["#ai", "#tech"]}
-    - Hashtag: {"usage_count": 500000, "engagement_rate": 0.08, "trending_score": 8.5}
-    - Audio: {"duration": 30, "artist": "Artist Name", "usage_count": 100000}
-    - Content Idea: {"content_type": "video", "estimated_time": "5 min", "difficulty": "easy"}
-    - Template: {"platform": "instagram", "dimensions": "1080x1080", "elements": [...]}
-    """
     
     # User annotations
     user_notes = Column(Text, nullable=True)
