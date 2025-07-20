@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     # Public API Settings
     API_RATE_LIMIT_DEFAULT: int = 1000  # Requests per hour
     API_RATE_LIMIT_PREMIUM: int = 10000  # Requests per hour for premium users
+    API_RATE_LIMIT_ENTERPRISE: int = 50000  # Requests per hour for enterprise users
     
     # Zapier Integration
     ZAPIER_WEBHOOK_TIMEOUT: int = 30  # Seconds
