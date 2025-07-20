@@ -5,10 +5,10 @@ import MonetizationDashboard from '@/components/monetization/MonetizationDashboa
 // Mock the icons
 jest.mock('@heroicons/react/24/outline', () => ({
   CurrencyDollarIcon: () => <div data-testid="currency-icon" />,
-  HandshakeIcon: () => <div data-testid="handshake-icon" />,
+  BuildingOfficeIcon: () => <div data-testid="building-icon" />,
   LinkIcon: () => <div data-testid="link-icon" />,
   ChartBarIcon: () => <div data-testid="chart-icon" />,
-  TrendingUpIcon: () => <div data-testid="trending-icon" />,
+  ArrowTrendingUpIcon: () => <div data-testid="trending-icon" />,
   CalendarIcon: () => <div data-testid="calendar-icon" />
 }));
 

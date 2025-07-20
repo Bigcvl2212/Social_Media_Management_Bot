@@ -52,6 +52,7 @@ export default function MonetizationDashboard() {
 
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetchMonetizationData();
@@ -132,6 +133,17 @@ export default function MonetizationDashboard() {
               <div key={i} className="bg-white rounded-lg p-6 h-32"></div>
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-xl mx-auto text-center">
+          <h2 className="text-2xl text-red-600 font-semibold mb-4">Failed to load monetization data</h2>
+          <p className="text-gray-700">Please try refreshing the page or check back later.</p>
         </div>
       </div>
     );
