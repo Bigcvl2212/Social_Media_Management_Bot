@@ -642,13 +642,13 @@ class ContentCurationService:
         content_type = extracted_data.get("content_type", "").lower()
         
         # Check for specific content types
-        if "hashtag" in url.lower() or "#" in url:
+        if "hashtag" in url.lower() or "#" in url or "tag/" in url.lower() or content_type == "hashtag":
             return CurationItemType.HASHTAG
-        elif "sound" in url.lower() or "audio" in url.lower():
+        elif "sound" in url.lower() or "audio" in url.lower() or "music" in url.lower() or content_type == "audio":
             return CurationItemType.AUDIO_TRACK
         elif platform == "tiktok" and "video" in content_type:
             return CurationItemType.INSPIRATION_POST
-        elif "template" in url.lower() or "design" in content_type:
+        elif "template" in url.lower() or "design" in content_type or content_type == "template":
             return CurationItemType.TEMPLATE
         else:
             return CurationItemType.CONTENT_IDEA

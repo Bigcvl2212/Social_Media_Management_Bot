@@ -4,7 +4,7 @@ Pydantic schemas for content curation and inspiration board
 
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from app.models.curation import (
     CurationCollectionType, CurationItemType, CurationItemStatus
@@ -44,8 +44,7 @@ class CurationCollectionResponse(CurationCollectionBase):
     updated_at: Optional[datetime] = None
     items_count: Optional[int] = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Item Schemas
@@ -89,20 +88,19 @@ class CurationItemResponse(CurationItemBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Trend Watch Schemas
 class TrendWatchBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
-    keywords: List[str] = Field(..., min_items=1)
-    platforms: List[str] = Field(..., min_items=1)
+    keywords: List[str] = Field(..., min_length=1)
+    platforms: List[str] = Field(..., min_length=1)
     regions: Optional[List[str]] = None
     is_active: bool = True
     alert_threshold: int = Field(1000, ge=1)
-    notification_frequency: str = Field("daily", regex="^(hourly|daily|weekly)$")
+    notification_frequency: str = Field("daily", pattern="^(hourly|daily|weekly)$")
     auto_save_to_collection_id: Optional[int] = None
     auto_save_threshold: int = Field(5000, ge=1)
 
@@ -114,12 +112,12 @@ class TrendWatchCreate(TrendWatchBase):
 class TrendWatchUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
-    keywords: Optional[List[str]] = Field(None, min_items=1)
-    platforms: Optional[List[str]] = Field(None, min_items=1)
+    keywords: Optional[List[str]] = Field(None, min_length=1)
+    platforms: Optional[List[str]] = Field(None, min_length=1)
     regions: Optional[List[str]] = None
     is_active: Optional[bool] = None
     alert_threshold: Optional[int] = Field(None, ge=1)
-    notification_frequency: Optional[str] = Field(None, regex="^(hourly|daily|weekly)$")
+    notification_frequency: Optional[str] = Field(None, pattern="^(hourly|daily|weekly)$")
     auto_save_to_collection_id: Optional[int] = None
     auto_save_threshold: Optional[int] = Field(None, ge=1)
 
@@ -132,8 +130,7 @@ class TrendWatchResponse(TrendWatchBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Trend Alert Schemas
@@ -152,17 +149,16 @@ class TrendAlertResponse(BaseModel):
     created_at: datetime
     read_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Content Discovery Schemas
 class TrendingContentRequest(BaseModel):
-    platforms: List[str] = Field(..., min_items=1)
+    platforms: List[str] = Field(..., min_length=1)
     keywords: Optional[List[str]] = None
     content_types: Optional[List[str]] = None
     region: str = "global"
-    time_range: str = Field("24h", regex="^(1h|6h|24h|7d|30d)$")
+    time_range: str = Field("24h", pattern="^(1h|6h|24h|7d|30d)$")
 
 
 class TrendingContentResponse(BaseModel):
@@ -203,8 +199,8 @@ class InspirationBoardSummary(BaseModel):
 
 # Bulk Operations
 class BulkItemOperation(BaseModel):
-    item_ids: List[int] = Field(..., min_items=1)
-    operation: str = Field(..., regex="^(move|delete|update_status|tag)$")
+    item_ids: List[int] = Field(..., min_length=1)
+    operation: str = Field(..., pattern="^(move|delete|update_status|tag)$")
     target_collection_id: Optional[int] = None
     new_status: Optional[CurationItemStatus] = None
     tags_to_add: Optional[List[str]] = None
