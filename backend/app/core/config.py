@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Social Media Management Bot"
     DEBUG: bool = False
     API_V1_STR: str = "/api/v1"
+
+    # API server
+    API_HOST: str = "0.0.0.0"
+    API_PORT: int = 8000
     
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./social_media_bot.db"
@@ -30,7 +34,18 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     
     # CORS
-    ALLOWED_HOSTS: List[str] = ["*"]
+    # Back-compat: some modules expect CORS_ORIGINS
+    CORS_ORIGINS: List[str] = ["*"]
+    # Keep this as a string so dotenv parsing stays simple on Windows.
+    # Use comma-separated values (or "*") in `.env`.
+    ALLOWED_HOSTS: str = "*"
+
+    # Instagram Private API (instagrapi)
+    IG_USERNAME: Optional[str] = None
+    IG_PASSWORD: Optional[str] = None
+    IG_2FA_CODE: Optional[str] = None
+    IG_DRY_RUN: bool = True
+    IG_SESSION_DIR: str = "var/sessions"
     
     # OAuth2 Settings
     GOOGLE_CLIENT_ID: Optional[str] = None
@@ -44,6 +59,7 @@ class Settings(BaseSettings):
     
     # AI Services
     OPENAI_API_KEY: Optional[str] = None
+    GROQ_API_KEY: Optional[str] = None
     
     # Integration Settings
     ENCRYPTION_KEY: str = "your-encryption-key-change-this-in-production"
@@ -88,7 +104,7 @@ class Settings(BaseSettings):
     TIKTOK_CLIENT_SECRET: Optional[str] = None
     YOUTUBE_API_KEY: Optional[str] = None
     
-    @field_validator("ALLOWED_HOSTS", mode="before")
+    @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v):
         if isinstance(v, str):
@@ -96,10 +112,21 @@ class Settings(BaseSettings):
         elif isinstance(v, list):
             return v
         return ["*"]
+
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
+    def normalize_allowed_hosts(cls, v):
+        if v is None:
+            return "*"
+        if isinstance(v, list):
+            # Joined for consistency; other modules can split if needed.
+            return ",".join([str(x).strip() for x in v if str(x).strip()]) or "*"
+        return str(v).strip() or "*"
     
     model_config = {
         "env_file": ".env",
-        "case_sensitive": True
+        "case_sensitive": True,
+        "extra": "ignore",
     }
 
 
@@ -108,3 +135,6 @@ settings = Settings()
 
 # Ensure upload directory exists
 Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+
+# Ensure instagrapi session directory exists
+Path(settings.IG_SESSION_DIR).mkdir(parents=True, exist_ok=True)

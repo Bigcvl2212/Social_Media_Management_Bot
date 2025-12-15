@@ -18,8 +18,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
       </div>
       
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Main content - add left margin on large screens to account for fixed sidebar */}
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-72">
         <Header setSidebarOpen={setSidebarOpen} />
         
         <main id="main-content" className="flex-1 overflow-y-auto" role="main">
