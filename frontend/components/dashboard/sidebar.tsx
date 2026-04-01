@@ -11,6 +11,11 @@ import {
   Cog6ToothIcon,
   UserGroupIcon,
   LinkIcon,
+  BeakerIcon,
+  ArchiveBoxIcon,
+  ChatBubbleBottomCenterTextIcon,
+  ArrowPathIcon,
+  RocketLaunchIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,6 +26,11 @@ const navigation = [
   { name: "Content", href: "/content", icon: PhotoIcon },
   { name: "Calendar", href: "/calendar", icon: CalendarIcon },
   { name: "Social Accounts", href: "/accounts", icon: LinkIcon },
+  { name: "Brand DNA", href: "/brand-dna", icon: BeakerIcon },
+  { name: "Content Vault", href: "/vault", icon: ArchiveBoxIcon },
+  { name: "Engagement", href: "/engagement", icon: ChatBubbleBottomCenterTextIcon },
+  { name: "Remix Studio", href: "/remix", icon: ArrowPathIcon },
+  { name: "Growth & Spy", href: "/growth", icon: RocketLaunchIcon },
   { name: "Analytics", href: "/analytics", icon: ChartBarIcon },
   { name: "Team", href: "/team", icon: UserGroupIcon },
   { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
