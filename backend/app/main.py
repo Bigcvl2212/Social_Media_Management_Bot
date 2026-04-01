@@ -10,8 +10,10 @@ import os
 import logging
 
 from app.core.config import settings
-from app.routes import content
-from app.routes import instagram
+from app.api.main import api_router
+from app.services.content_scheduler_service import ContentSchedulerService
+from app.services.comment_monitor_service import CommentMonitorService
+from app.services.content_autopilot_service import ContentAutopilotService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -44,28 +46,74 @@ os.makedirs(f"{settings.UPLOAD_DIR}/audio", exist_ok=True)
 os.makedirs(f"{settings.UPLOAD_DIR}/music", exist_ok=True)
 
 # Include routers
-app.include_router(content.router)
-app.include_router(instagram.router)
+app.include_router(api_router, prefix=settings.API_V1_STR)
 
 # Mount static files
 if os.path.exists("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Mount uploads for serving generated media previews
+uploads_gen = os.path.join(settings.UPLOAD_DIR, "generated")
+os.makedirs(uploads_gen, exist_ok=True)
+app.mount("/uploads/generated", StaticFiles(directory=uploads_gen), name="generated_media")
+
 
 # ==================== STARTUP/SHUTDOWN EVENTS ====================
 
+_content_scheduler = None
+_comment_monitor = None
+_content_autopilot = None
+
 @app.on_event("startup")
 async def startup_event():
+    global _content_scheduler, _comment_monitor, _content_autopilot
     """Run on application startup"""
     logger.info("Social Media Content Manager API starting...")
     logger.info(f"Upload directory: {settings.UPLOAD_DIR}")
     logger.info(f"CORS origins: {settings.CORS_ORIGINS}")
+    # Create database tables
+    from app.core.database import create_tables
+    await create_tables()
+    # Start background services
+    try:
+        _content_scheduler = ContentSchedulerService()
+        _content_scheduler.start()
+        logger.info("Content scheduler started")
+    except Exception as e:
+        logger.warning(f"Content scheduler failed to start: {e}")
+    try:
+        _comment_monitor = CommentMonitorService()
+        _comment_monitor.start()
+        logger.info("Comment monitor started")
+    except Exception as e:
+        logger.warning(f"Comment monitor failed to start: {e}")
+    try:
+        _content_autopilot = ContentAutopilotService()
+        _content_autopilot.start()
+        logger.info("Content autopilot started")
+    except Exception as e:
+        logger.warning(f"Content autopilot failed to start: {e}")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Run on application shutdown"""
     logger.info("Social Media Content Manager API shutting down...")
+    if _content_scheduler:
+        try:
+            _content_scheduler.stop()
+        except Exception:
+            pass
+    if _comment_monitor:
+        try:
+            _comment_monitor.stop()
+        except Exception:
+            pass
+    if _content_autopilot:
+        try:
+            _content_autopilot.stop()
+        except Exception:
+            pass
 
 
 # ==================== ROOT ENDPOINT ====================

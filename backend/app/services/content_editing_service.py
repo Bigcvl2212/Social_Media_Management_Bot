@@ -16,7 +16,10 @@ except ImportError:
     CV2_AVAILABLE = False
     print("OpenCV/NumPy not available, video editing features will be limited")
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance, ImageOps
-import openai
+try:
+    import openai
+except ImportError:
+    openai = None
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings

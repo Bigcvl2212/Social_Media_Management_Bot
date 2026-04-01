@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # API server
     API_HOST: str = "0.0.0.0"
-    API_PORT: int = 8000
+    API_PORT: int = 8001
     
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./social_media_bot.db"
@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     # AI Services
     OPENAI_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
     
     # Integration Settings
     ENCRYPTION_KEY: str = "your-encryption-key-change-this-in-production"
@@ -98,11 +99,19 @@ class Settings(BaseSettings):
     TWITTER_API_SECRET: Optional[str] = None
     FACEBOOK_APP_ID: Optional[str] = None
     FACEBOOK_APP_SECRET: Optional[str] = None
+    FACEBOOK_PAGE_ID: Optional[str] = None
+    FACEBOOK_PAGE_ACCESS_TOKEN: Optional[str] = None
+    FACEBOOK_AD_ACCOUNT_ID: Optional[str] = None
+    MESSENGER_ENABLED: bool = False
+    WEBHOOK_VERIFY_TOKEN: str = "gymbot_webhook_verify"
     LINKEDIN_CLIENT_ID: Optional[str] = None
     LINKEDIN_CLIENT_SECRET: Optional[str] = None
     TIKTOK_CLIENT_KEY: Optional[str] = None
     TIKTOK_CLIENT_SECRET: Optional[str] = None
     YOUTUBE_API_KEY: Optional[str] = None
+
+    # GymBot Integration
+    GYMBOT_DB_PATH: str = r"C:\Users\mayoj\AppData\Local\GymBot\data\gym_bot.db"
     
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

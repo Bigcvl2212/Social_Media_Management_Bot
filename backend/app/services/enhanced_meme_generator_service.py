@@ -12,7 +12,10 @@ import tempfile
 from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
 import httpx
-import openai
+try:
+    import openai
+except ImportError:
+    openai = None
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance, ImageOps
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta

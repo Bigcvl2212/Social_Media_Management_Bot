@@ -10,7 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, desc, or_
 from sqlalchemy.orm import selectinload
 import httpx
-import openai
+try:
+    import openai
+except ImportError:
+    openai = None
 from urllib.parse import urlparse
 
 from app.core.config import settings

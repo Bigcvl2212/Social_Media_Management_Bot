@@ -12,7 +12,10 @@ import tempfile
 from typing import List, Dict, Any, Optional, Union, Tuple
 from pathlib import Path
 import httpx
-import openai
+try:
+    import openai
+except ImportError:
+    openai = None
 try:
     import cv2
     import numpy as np

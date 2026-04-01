@@ -8,8 +8,14 @@ import asyncio
 from typing import Optional, Dict, Any
 from datetime import datetime
 
-import openai
-from groq import Groq
+try:
+    import openai
+except ImportError:
+    openai = None
+try:
+    from groq import Groq
+except ImportError:
+    Groq = None
 
 from app.core.config import settings
 

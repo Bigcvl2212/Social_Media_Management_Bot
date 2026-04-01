@@ -6,12 +6,32 @@ from datetime import datetime, timedelta
 from typing import Optional, Union
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from cryptography.fernet import Fernet
+import base64
+import hashlib
 import secrets
 
 from app.core.config import settings
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# ── Token Encryption (Fernet) ────────────────────────────
+# Derive a 32-byte Fernet key from the app SECRET_KEY so we don't need
+# a separate env var.  Fernet requires url-safe base64-encoded 32 bytes.
+_raw_key = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
+_fernet_key = base64.urlsafe_b64encode(_raw_key)
+_fernet = Fernet(_fernet_key)
+
+
+def encrypt_token(plaintext: str) -> str:
+    """Encrypt an OAuth token (or any secret string) for DB storage."""
+    return _fernet.encrypt(plaintext.encode()).decode()
+
+
+def decrypt_token(ciphertext: str) -> str:
+    """Decrypt an OAuth token retrieved from DB."""
+    return _fernet.decrypt(ciphertext.encode()).decode()
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

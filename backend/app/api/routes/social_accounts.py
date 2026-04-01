@@ -3,21 +3,27 @@ Social accounts management routes with OAuth integration
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from pydantic import BaseModel
 import secrets
 import urllib.parse
+from datetime import datetime, timezone
+
+import httpx
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.core.auth import get_current_user
+from app.core.security import encrypt_token
 from app.models.user import User
 from app.models.social_account import SocialAccount, SocialPlatform, AccountStatus
 
 router = APIRouter()
 
-# Pydantic models
+# ── Pydantic models ──────────────────────────────────────
+
 class SocialAccountResponse(BaseModel):
     id: int
     platform: SocialPlatform
@@ -30,7 +36,7 @@ class SocialAccountResponse(BaseModel):
     created_at: str
     last_sync: Optional[str] = None
     permissions: Optional[List[str]] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -42,175 +48,330 @@ class OAuthStartResponse(BaseModel):
     auth_url: str
     state: str
 
-# Platform configurations (in production, these would be in environment variables)
+class OAuthCallbackRequest(BaseModel):
+    code: str
+    state: str
+
+class PageSelectRequest(BaseModel):
+    account_id: int
+    page_id: str
+
+class PageOption(BaseModel):
+    page_id: str
+    name: str
+    category: str
+    access_token_preview: str  # last-4 chars only
+
+# ── In-memory state store (production: Redis or signed JWT) ──
+_oauth_states: Dict[str, int] = {}
+
+GRAPH_API = "https://graph.facebook.com/v21.0"
+
+# ── Platform configs ─────────────────────────────────────
+
 PLATFORM_CONFIGS = {
+    SocialPlatform.FACEBOOK: {
+        "name": "Facebook",
+        "auth_url": "https://www.facebook.com/v21.0/dialog/oauth",
+        "token_url": "https://graph.facebook.com/v21.0/oauth/access_token",
+        "scope": (
+            "pages_show_list,pages_manage_posts,pages_manage_metadata,"
+            "pages_manage_engagement,pages_read_engagement,"
+            "pages_read_user_content,read_insights,business_management"
+        ),
+        "redirect_uri": f"{settings.ALLOWED_HOSTS.split(',')[0].strip() if settings.ALLOWED_HOSTS != '*' else 'http://localhost:3000'}/auth/callback/facebook",
+    },
     SocialPlatform.INSTAGRAM: {
         "name": "Instagram",
         "auth_url": "https://api.instagram.com/oauth/authorize",
-        "client_id": "your-instagram-app-id",
         "scope": "user_profile,user_media",
-        "redirect_uri": "http://localhost:3000/auth/callback/instagram"
+        "redirect_uri": "http://localhost:3000/auth/callback/instagram",
     },
     SocialPlatform.TWITTER: {
         "name": "Twitter/X",
         "auth_url": "https://twitter.com/i/oauth2/authorize",
-        "client_id": "your-twitter-client-id",
         "scope": "tweet.read tweet.write users.read",
-        "redirect_uri": "http://localhost:3000/auth/callback/twitter"
-    },
-    SocialPlatform.FACEBOOK: {
-        "name": "Facebook",
-        "auth_url": "https://www.facebook.com/v18.0/dialog/oauth",
-        "client_id": "your-facebook-app-id",
-        "scope": "pages_manage_posts,pages_read_engagement",
-        "redirect_uri": "http://localhost:3000/auth/callback/facebook"
+        "redirect_uri": "http://localhost:3000/auth/callback/twitter",
     },
     SocialPlatform.YOUTUBE: {
         "name": "YouTube",
         "auth_url": "https://accounts.google.com/o/oauth2/v2/auth",
-        "client_id": "your-google-client-id",
         "scope": "https://www.googleapis.com/auth/youtube.upload",
-        "redirect_uri": "http://localhost:3000/auth/callback/youtube"
+        "redirect_uri": "http://localhost:3000/auth/callback/youtube",
     },
     SocialPlatform.LINKEDIN: {
         "name": "LinkedIn",
         "auth_url": "https://www.linkedin.com/oauth/v2/authorization",
-        "client_id": "your-linkedin-client-id",
         "scope": "w_member_social",
-        "redirect_uri": "http://localhost:3000/auth/callback/linkedin"
+        "redirect_uri": "http://localhost:3000/auth/callback/linkedin",
     },
     SocialPlatform.TIKTOK: {
         "name": "TikTok",
         "auth_url": "https://www.tiktok.com/auth/authorize",
-        "client_id": "your-tiktok-client-key",
         "scope": "user.info.basic,video.upload",
-        "redirect_uri": "http://localhost:3000/auth/callback/tiktok"
-    }
+        "redirect_uri": "http://localhost:3000/auth/callback/tiktok",
+    },
 }
+
+
+# ══════════════════════════════════════════════════════════
+# LIST / PLATFORMS / STATS  (unchanged)
+# ══════════════════════════════════════════════════════════
 
 @router.get("/", response_model=List[SocialAccountResponse])
 async def list_social_accounts(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    """List user's connected social media accounts"""
-    try:
-        query = select(SocialAccount).where(SocialAccount.user_id == current_user.id)
-        result = await db.execute(query)
-        accounts = result.scalars().all()
-        
-        return [SocialAccountResponse.model_validate(account) for account in accounts]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch social accounts: {str(e)}")
+    query = select(SocialAccount).where(SocialAccount.user_id == current_user.id)
+    result = await db.execute(query)
+    accounts = result.scalars().all()
+    return [SocialAccountResponse.model_validate(account) for account in accounts]
+
 
 @router.get("/platforms")
 async def get_available_platforms():
-    """Get list of available social media platforms"""
-    platforms = []
-    for platform, config in PLATFORM_CONFIGS.items():
-        platforms.append({
-            "platform": platform.value,
-            "name": config["name"],
-            "supported": True
-        })
-    return {"platforms": platforms}
+    return {
+        "platforms": [
+            {"platform": p.value, "name": c["name"], "supported": True}
+            for p, c in PLATFORM_CONFIGS.items()
+        ]
+    }
+
+
+# ══════════════════════════════════════════════════════════
+# OAUTH START
+# ══════════════════════════════════════════════════════════
 
 @router.post("/connect/{platform}/start", response_model=OAuthStartResponse)
 async def start_oauth_flow(
     platform: SocialPlatform,
-    request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    """Start OAuth flow for connecting a social media account"""
-    try:
-        if platform not in PLATFORM_CONFIGS:
-            raise HTTPException(status_code=400, detail=f"Platform {platform} not supported")
-        
-        config = PLATFORM_CONFIGS[platform]
-        
-        # Generate state parameter for security
-        state = secrets.token_urlsafe(32)
-        
-        # Store state in session or database (simplified for demo)
-        # In production, you'd store this securely
-        
-        # Build OAuth URL
-        params = {
-            "client_id": config["client_id"],
-            "redirect_uri": config["redirect_uri"],
-            "scope": config["scope"],
-            "response_type": "code",
-            "state": state
-        }
-        
-        auth_url = f"{config['auth_url']}?{urllib.parse.urlencode(params)}"
-        
-        return OAuthStartResponse(auth_url=auth_url, state=state)
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to start OAuth flow: {str(e)}")
+    if platform not in PLATFORM_CONFIGS:
+        raise HTTPException(status_code=400, detail=f"Platform {platform} not supported")
+
+    config = PLATFORM_CONFIGS[platform]
+    state = secrets.token_urlsafe(32)
+    _oauth_states[state] = current_user.id  # bind state → user
+
+    params = {
+        "client_id": settings.FACEBOOK_APP_ID or "",
+        "redirect_uri": config["redirect_uri"],
+        "scope": config["scope"],
+        "response_type": "code",
+        "state": state,
+    }
+    auth_url = f"{config['auth_url']}?{urllib.parse.urlencode(params)}"
+    return OAuthStartResponse(auth_url=auth_url, state=state)
+
+
+# ══════════════════════════════════════════════════════════
+# OAUTH CALLBACK — REAL TOKEN EXCHANGE
+# ══════════════════════════════════════════════════════════
 
 @router.post("/connect/{platform}/callback")
 async def oauth_callback(
     platform: SocialPlatform,
-    code: str,
-    state: str,
+    body: OAuthCallbackRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    """Handle OAuth callback and save account credentials"""
-    try:
-        # In a real implementation, you would:
-        # 1. Verify the state parameter
-        # 2. Exchange the code for access tokens
-        # 3. Fetch user info from the platform API
-        # 4. Store the encrypted tokens in the database
-        
-        # For demo purposes, create a mock account
-        mock_account = SocialAccount(
+    """Exchange authorization code for real access token, fetch user pages."""
+
+    # 1. Verify state
+    expected_user = _oauth_states.pop(body.state, None)
+    if expected_user is None or expected_user != current_user.id:
+        raise HTTPException(status_code=403, detail="Invalid or expired OAuth state")
+
+    if platform != SocialPlatform.FACEBOOK:
+        raise HTTPException(status_code=501, detail=f"OAuth callback for {platform.value} not yet implemented")
+
+    config = PLATFORM_CONFIGS[SocialPlatform.FACEBOOK]
+
+    # 2. Exchange code → short-lived user token
+    async with httpx.AsyncClient(timeout=30) as client:
+        token_resp = await client.get(
+            config["token_url"],
+            params={
+                "client_id": settings.FACEBOOK_APP_ID,
+                "client_secret": settings.FACEBOOK_APP_SECRET,
+                "redirect_uri": config["redirect_uri"],
+                "code": body.code,
+            },
+        )
+        if token_resp.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"Facebook token exchange failed: {token_resp.text}")
+        token_data = token_resp.json()
+        short_token = token_data["access_token"]
+
+        # 3. Exchange short-lived → long-lived user token (60 days)
+        ll_resp = await client.get(
+            f"{GRAPH_API}/oauth/access_token",
+            params={
+                "grant_type": "fb_exchange_token",
+                "client_id": settings.FACEBOOK_APP_ID,
+                "client_secret": settings.FACEBOOK_APP_SECRET,
+                "fb_exchange_token": short_token,
+            },
+        )
+        if ll_resp.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"Long-lived token exchange failed: {ll_resp.text}")
+        ll_data = ll_resp.json()
+        long_lived_token = ll_data["access_token"]
+        expires_in = ll_data.get("expires_in", 5184000)  # default 60 days
+
+        # 4. Get user profile
+        me_resp = await client.get(
+            f"{GRAPH_API}/me",
+            params={"fields": "id,name,email", "access_token": long_lived_token},
+        )
+        me_data = me_resp.json() if me_resp.status_code == 200 else {}
+
+        # 5. Get user's Pages (they'll pick one in the next step)
+        pages_resp = await client.get(
+            f"{GRAPH_API}/me/accounts",
+            params={
+                "fields": "id,name,category,access_token",
+                "access_token": long_lived_token,
+            },
+        )
+        if pages_resp.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"Failed to fetch pages: {pages_resp.text}")
+        pages_data = pages_resp.json().get("data", [])
+
+    # 6. Upsert SocialAccount with the USER-level long-lived token
+    #    (page token stored after page selection)
+    from datetime import timedelta
+    token_expiry = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+
+    existing_q = select(SocialAccount).where(
+        and_(
+            SocialAccount.user_id == current_user.id,
+            SocialAccount.platform == SocialPlatform.FACEBOOK,
+        )
+    )
+    result = await db.execute(existing_q)
+    account = result.scalar_one_or_none()
+
+    fb_user_id = me_data.get("id", "unknown")
+    fb_name = me_data.get("name", "Facebook User")
+
+    if account:
+        account.status = AccountStatus.CONNECTED
+        account.access_token = encrypt_token(long_lived_token)
+        account.platform_user_id = fb_user_id
+        account.display_name = fb_name
+        account.token_expires_at = token_expiry
+        account.platform_data = {"pages": [
+            {"id": p["id"], "name": p["name"], "category": p.get("category", "")}
+            for p in pages_data
+        ]}
+    else:
+        account = SocialAccount(
             user_id=current_user.id,
-            platform=platform,
-            platform_user_id=f"mock_{platform.value}_{current_user.id}",
-            username=f"@{current_user.username}_{platform.value}",
-            display_name=f"{current_user.first_name or current_user.username} on {platform.value.title()}",
-            profile_image_url=None,
+            platform=SocialPlatform.FACEBOOK,
+            platform_user_id=fb_user_id,
+            username=fb_name,
+            display_name=fb_name,
             status=AccountStatus.CONNECTED,
-            access_token="mock_access_token",  # Would be encrypted in production
-            permissions=["read", "write", "manage"]
+            access_token=encrypt_token(long_lived_token),
+            token_expires_at=token_expiry,
+            permissions=config["scope"].split(","),
+            platform_data={"pages": [
+                {"id": p["id"], "name": p["name"], "category": p.get("category", "")}
+                for p in pages_data
+            ]},
         )
-        
-        # Check if account already exists
-        existing_query = select(SocialAccount).where(
-            and_(
-                SocialAccount.user_id == current_user.id,
-                SocialAccount.platform == platform
-            )
+        db.add(account)
+
+    await db.commit()
+    await db.refresh(account)
+
+    # 7. Return pages for the user to choose from
+    return {
+        "account_id": account.id,
+        "facebook_name": fb_name,
+        "pages": [
+            PageOption(
+                page_id=p["id"],
+                name=p["name"],
+                category=p.get("category", ""),
+                access_token_preview=f"...{p['access_token'][-4:]}",
+            ).model_dump()
+            for p in pages_data
+        ],
+        "message": "Select which Facebook Page to manage.",
+    }
+
+
+# ══════════════════════════════════════════════════════════
+# PAGE SELECTION — user picks which Page to manage
+# ══════════════════════════════════════════════════════════
+
+@router.post("/connect/facebook/select-page")
+async def select_facebook_page(
+    body: PageSelectRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """After OAuth, the gym owner picks which Page this account manages."""
+
+    # 1. Load the account
+    q = select(SocialAccount).where(
+        and_(
+            SocialAccount.id == body.account_id,
+            SocialAccount.user_id == current_user.id,
+            SocialAccount.platform == SocialPlatform.FACEBOOK,
         )
-        existing_result = await db.execute(existing_query)
-        existing_account = existing_result.scalar_one_or_none()
-        
-        if existing_account:
-            # Update existing account
-            existing_account.status = AccountStatus.CONNECTED
-            existing_account.access_token = mock_account.access_token
-            existing_account.username = mock_account.username
-            existing_account.display_name = mock_account.display_name
-            account = existing_account
-        else:
-            # Create new account
-            db.add(mock_account)
-            account = mock_account
-        
-        await db.commit()
-        await db.refresh(account)
-        
-        return {"message": f"Successfully connected {platform.value} account", "account_id": account.id}
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"OAuth callback failed: {str(e)}")
+    )
+    result = await db.execute(q)
+    account = result.scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Facebook account not found")
+
+    # 2. Fetch a never-expiring Page Access Token from the long-lived user token
+    from app.core.security import decrypt_token
+    user_token = decrypt_token(account.access_token)
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.get(
+            f"{GRAPH_API}/{body.page_id}",
+            params={
+                "fields": "id,name,category,access_token",
+                "access_token": user_token,
+            },
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"Failed to get page token: {resp.text}")
+        page_data = resp.json()
+
+    permanent_page_token = page_data.get("access_token", "")
+    if not permanent_page_token:
+        raise HTTPException(status_code=502, detail="Facebook did not return a page access token")
+
+    # 3. Store the encrypted page token + page_id in the account
+    account.access_token = encrypt_token(permanent_page_token)
+    account.platform_user_id = body.page_id
+    account.username = page_data.get("name", "")
+    account.display_name = page_data.get("name", "")
+    account.token_expires_at = None  # permanent token never expires
+    account.platform_data = {
+        **(account.platform_data or {}),
+        "selected_page_id": body.page_id,
+        "selected_page_name": page_data.get("name", ""),
+    }
+
+    await db.commit()
+    await db.refresh(account)
+
+    return {
+        "message": f"Now managing: {page_data.get('name', body.page_id)}",
+        "page_id": body.page_id,
+        "page_name": page_data.get("name", ""),
+        "account_id": account.id,
+    }
 
 @router.delete("/{account_id}")
 async def disconnect_social_account(

@@ -10,6 +10,7 @@ import {
   CalendarIcon,
   ChartBarIcon,
   Cog6ToothIcon,
+  BoltIcon,
   RocketLaunchIcon,
 } from "@heroicons/react/24/outline";
 
@@ -19,11 +20,13 @@ import { ContentLibrary } from "@/components/content/content-library";
 import { ContentScheduler } from "@/components/content/content-scheduler";
 import { GrowthAnalytics } from "@/components/content/growth-analytics";
 import { PlatformManager } from "@/components/content/platform-manager";
+import { AutomationsPanel } from "@/components/content/automations-panel";
 
 type ContentTab = 
   | "create" 
   | "library" 
   | "scheduler" 
+  | "automations"
   | "analytics" 
   | "platforms" 
   | "settings";
@@ -70,6 +73,12 @@ export default function EnhancedContentPage() {
       label: "Schedule & Post",
       icon: CalendarIcon,
       description: "Plan and automate posting",
+    },
+    {
+      id: "automations" as ContentTab,
+      label: "Automations",
+      icon: BoltIcon,
+      description: "Autopilot, comments, and moderation",
     },
     {
       id: "analytics" as ContentTab,
@@ -184,6 +193,7 @@ export default function EnhancedContentPage() {
           {activeTab === "create" && <ContentCreationHub />}
           {activeTab === "library" && <ContentLibrary />}
           {activeTab === "scheduler" && <ContentScheduler />}
+          {activeTab === "automations" && <AutomationsPanel />}
           {activeTab === "analytics" && <GrowthAnalytics />}
           {activeTab === "platforms" && <PlatformManager />}
         </div>

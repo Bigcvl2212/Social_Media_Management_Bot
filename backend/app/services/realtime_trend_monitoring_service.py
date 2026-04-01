@@ -9,7 +9,10 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 import httpx
-import openai
+try:
+    import openai
+except ImportError:
+    openai = None
 
 from app.core.config import settings
 from app.models.curation import TrendWatch, TrendAlert

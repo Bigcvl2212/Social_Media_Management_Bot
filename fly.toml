@@ -1,0 +1,37 @@
+# Fly.io configuration — Social Media Manager API
+# Free tier: 3 shared-cpu VMs, 256MB RAM each
+#
+# Deploy steps:
+#   1. Install flyctl: https://fly.io/docs/flyctl/install/
+#   2. fly auth login
+#   3. fly launch --no-deploy    (first time — creates the app)
+#   4. fly secrets set GEMINI_API_KEY=AIza... FACEBOOK_PAGE_ACCESS_TOKEN=EAAh... (etc)
+#   5. fly deploy --dockerfile Dockerfile.flyio
+#
+# After deploy: fly status / fly logs / fly open
+
+app = 'gymbot-social'
+primary_region = 'ord'  # Chicago — closest to Fond du Lac, WI
+
+[build]
+  dockerfile = 'Dockerfile.flyio'
+
+[env]
+  PORT = '8000'
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'stop'     # Free tier: auto-stop when idle
+  auto_start_machines = true      # Wake on first request (~2-5 sec cold start)
+  min_machines_running = 0        # Allow scaling to zero for free tier
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[mounts]
+  source = 'sm_data'
+  destination = '/app/data'
+  initial_size = '1'  # 1 GB persistent volume for SQLite DB

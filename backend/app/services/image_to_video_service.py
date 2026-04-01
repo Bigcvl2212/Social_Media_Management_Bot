@@ -11,7 +11,10 @@ import tempfile
 from typing import List, Dict, Any, Optional, Union, Tuple
 from pathlib import Path
 import httpx
-import openai
+try:
+    import openai
+except ImportError:
+    openai = None
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance, ImageOps
 try:
     import cv2

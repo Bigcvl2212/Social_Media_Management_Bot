@@ -63,6 +63,11 @@ class TrendAnalysisRequest(BaseModel):
     platform: Platform
     timeframe_days: int = 7
 
+class HashtagRequest(BaseModel):
+    content_description: str = ""
+    query: str = ""
+    platform: Platform = Platform.FACEBOOK
+
 class ViralPredictionRequest(BaseModel):
     content_description: str
     platform: Platform
@@ -120,16 +125,16 @@ async def search_viral_content(
 
 @router.post("/search/hashtags")
 async def suggest_hashtags(
-    content_description: str = Form(...),
-    platform: Platform = Form(...),
+    request: HashtagRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """AI-powered hashtag suggestions based on content and platform"""
     try:
+        description = request.content_description or request.query or "fitness gym"
         search_service = ContentSearchService(db)
-        hashtags = await search_service.suggest_hashtags(content_description, platform)
-        return {"hashtags": hashtags, "platform": platform.value}
+        hashtags = await search_service.suggest_hashtags(description, request.platform)
+        return {"hashtags": hashtags, "platform": request.platform.value}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to suggest hashtags: {str(e)}")
 

@@ -11,7 +11,10 @@ import tempfile
 from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
 import httpx
-import openai
+try:
+    import openai
+except ImportError:
+    openai = None
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 try:
     import cv2
@@ -32,7 +35,18 @@ class ContentGenerationService:
     
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.openai_client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
+        _oai_key = settings.OPENAI_API_KEY or ""
+        if _oai_key and _oai_key not in ("your-openai-api-key", "sk-placeholder"):
+            self.openai_client = openai.AsyncOpenAI(api_key=_oai_key)
+        else:
+            self.openai_client = None
+        # Gemini fallback
+        self._gemini = None
+        try:
+            from app.services.gemini_ai_service import GeminiAIService
+            self._gemini = GeminiAIService()
+        except Exception:
+            pass
         self.temp_dir = Path(settings.UPLOAD_DIR) / "temp"
         self.temp_dir.mkdir(parents=True, exist_ok=True)
     
@@ -43,8 +57,21 @@ class ContentGenerationService:
                                   style: str = "engaging",
                                   target_audience: str = None) -> Dict[str, Any]:
         """Generate AI-powered text content optimized for specific platforms"""
+        # Try Gemini first
+        if self._gemini:
+            try:
+                result = await self._gemini.generate_post_text(
+                    topic=prompt,
+                    style=style,
+                    platform=platform.value if hasattr(platform, 'value') else str(platform),
+                    target_audience=target_audience or "local gym members and prospects in Fond du Lac, WI",
+                )
+                return result
+            except Exception as e:
+                pass  # Fall through to OpenAI
+
         if not self.openai_client:
-            return {"error": "OpenAI API key not configured"}
+            return {"error": "No AI provider configured (set GEMINI_API_KEY or OPENAI_API_KEY)"}
         
         try:
             platform_specs = self._get_text_specifications(platform, content_type)
@@ -107,8 +134,19 @@ class ContentGenerationService:
                                    style: str = "modern",
                                    dimensions: tuple = None) -> Dict[str, Any]:
         """Generate AI-powered images with platform-specific optimizations"""
+        # Try Gemini image generation first
+        if self._gemini:
+            try:
+                result = await self._gemini.generate_image(
+                    prompt=prompt,
+                    style=style,
+                )
+                return result
+            except Exception:
+                pass
+
         if not self.openai_client:
-            return {"error": "OpenAI API key not configured"}
+            return {"error": "No AI provider configured (set GEMINI_API_KEY or OPENAI_API_KEY)"}
         
         try:
             # Get platform-specific image requirements

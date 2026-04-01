@@ -7,7 +7,11 @@ from typing import List, Dict, Any, Optional
 import httpx
 from datetime import datetime, timedelta
 import json
-import openai
+import re
+try:
+    import openai
+except ImportError:
+    openai = None
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -21,7 +25,19 @@ class ContentSearchService:
     
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.openai_client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY) if settings.OPENAI_API_KEY else None
+        # Only init OpenAI if a real key is configured
+        _oai_key = settings.OPENAI_API_KEY or ""
+        if _oai_key and _oai_key not in ("your-openai-api-key", "sk-placeholder"):
+            self.openai_client = openai.AsyncOpenAI(api_key=_oai_key)
+        else:
+            self.openai_client = None
+        # Gemini fallback
+        self._gemini = None
+        try:
+            from app.services.gemini_ai_service import GeminiAIService
+            self._gemini = GeminiAIService()
+        except Exception:
+            pass
     
     async def search_trending_topics(self, platform: Platform, region: str = "global") -> List[Dict[str, Any]]:
         """Search for trending topics on specific platforms"""
@@ -51,6 +67,63 @@ class ContentSearchService:
     
     async def generate_content_ideas(self, topic: str, platform: Platform, target_audience: str = None) -> List[Dict[str, Any]]:
         """Generate AI-powered content ideas based on topics and platform"""
+        # Try Gemini first (configured and available)
+        if self._gemini:
+            try:
+                import asyncio as _aio
+                from google.genai import types as _gtypes
+                prompt = (
+                    f"Generate 6 creative social media content ideas for {platform.value} "
+                    f"about '{topic}' for Anytime Fitness Fond du Lac.\n"
+                    f"Target audience: {target_audience or 'local gym members and prospects'}.\n\n"
+                    "For each idea provide:\n"
+                    "1. title - a catchy title\n"
+                    "2. content_type - video, image, carousel, or text\n"
+                    "3. hook - opening line\n"
+                    "4. hashtags - 3 relevant hashtags\n"
+                    "5. cta - call to action\n"
+                    "6. virality_score - 1 to 10\n\n"
+                    "Return ONLY a valid JSON array."
+                )
+                response = await _aio.to_thread(
+                    self._gemini.client.models.generate_content,
+                    model=self._gemini.TEXT_MODEL,
+                    contents=prompt,
+                    config=_gtypes.GenerateContentConfig(
+                        temperature=0.85,
+                        max_output_tokens=4096,
+                        response_mime_type="application/json",
+                        thinking_config=_gtypes.ThinkingConfig(thinking_budget=0),
+                    ),
+                )
+                raw = response.text.strip()
+                # Robust JSON extraction
+                text = raw
+                if text.startswith("```"):
+                    text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+                if text.endswith("```"):
+                    text = text[:-3]
+                text = text.strip()
+                if text.lower().startswith("json"):
+                    text = text[4:].strip()
+                ideas = None
+                try:
+                    ideas = json.loads(text)
+                except json.JSONDecodeError:
+                    m = re.search(r'\[[\s\S]*\]', text)
+                    if m:
+                        try:
+                            ideas = json.loads(m.group())
+                        except json.JSONDecodeError:
+                            pass
+                if ideas is None:
+                    return []
+                if isinstance(ideas, dict):
+                    ideas = ideas.get("ideas", [])
+                return ideas if isinstance(ideas, list) else []
+            except Exception as e:
+                print(f"Gemini content ideas error: {e}")
+
         if not self.openai_client:
             return []
         
@@ -132,6 +205,56 @@ class ContentSearchService:
     
     async def suggest_hashtags(self, content_description: str, platform: Platform) -> List[str]:
         """AI-powered hashtag suggestions based on content and platform"""
+        platform_hashtag_rules = self._get_hashtag_rules(platform)
+
+        # Try Gemini first
+        if self._gemini:
+            try:
+                import asyncio as _aio
+                from google.genai import types as _gtypes
+                prompt = (
+                    f"Generate optimal hashtags for {platform.value} content about: "
+                    f"\"{content_description}\" for a local gym (Anytime Fitness).\n\n"
+                    f"Max hashtags: {platform_hashtag_rules['max_count']}\n"
+                    "Mix of: 3-5 trending/popular, 3-5 niche/specific, 2-3 branded.\n"
+                    "Return ONLY a JSON array of hashtag strings."
+                )
+                response = await _aio.to_thread(
+                    self._gemini.client.models.generate_content,
+                    model=self._gemini.TEXT_MODEL,
+                    contents=prompt,
+                    config=_gtypes.GenerateContentConfig(
+                        temperature=0.7,
+                        max_output_tokens=512,
+                        response_mime_type="application/json",
+                        thinking_config=_gtypes.ThinkingConfig(thinking_budget=0),
+                    ),
+                )
+                raw = response.text.strip()
+                hashtags = None
+                try:
+                    parsed = json.loads(raw)
+                except json.JSONDecodeError:
+                    parsed = None
+                    m = re.search(r'\[[\s\S]*\]', raw)
+                    if m:
+                        try:
+                            parsed = json.loads(m.group())
+                        except json.JSONDecodeError:
+                            pass
+                if isinstance(parsed, list):
+                    hashtags = parsed
+                elif isinstance(parsed, dict):
+                    # Model may wrap in {"hashtags": [...]} or similar
+                    for key in ("hashtags", "results", "data", "tags"):
+                        if isinstance(parsed.get(key), list):
+                            hashtags = parsed[key]
+                            break
+                if hashtags:
+                    return [str(t) for t in hashtags][:platform_hashtag_rules['max_count']]
+            except Exception as e:
+                print(f"Gemini hashtag error: {e}")
+
         if not self.openai_client:
             return []
         

@@ -7,7 +7,10 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import httpx
-import openai
+try:
+    import openai
+except ImportError:
+    openai = None
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 

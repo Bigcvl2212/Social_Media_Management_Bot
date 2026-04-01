@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, desc
 from pydantic import BaseModel
 from datetime import datetime, timedelta
-import random
+import logging
 
 from app.core.database import get_db
 from app.core.auth import get_current_user
@@ -16,6 +16,7 @@ from app.models.user import User
 from app.models.content import Content, ContentSchedule, ContentStatus, ScheduleStatus
 from app.models.social_account import SocialAccount, SocialPlatform, AccountStatus
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Pydantic models for analytics
@@ -107,9 +108,30 @@ async def get_analytics(
         total_accounts = len(accounts)
         active_accounts = len([a for a in accounts if a.status == AccountStatus.CONNECTED])
         
-        # Mock engagement data (in real implementation, fetch from platform APIs)
-        total_impressions = random.randint(50000, 200000)
-        total_engagements = random.randint(2000, 15000)
+        # Fetch real engagement data from Facebook Insights
+        total_impressions = 0
+        total_engagements = 0
+        fb_page_info = None
+        fb_posts = []
+        try:
+            from app.services.facebook_service import FacebookService
+            from app.services.credential_resolver import get_facebook_credentials
+            creds = await get_facebook_credentials(db, user_id=current_user.id)
+            fb = FacebookService(page_id=creds.page_id, page_token=creds.page_token)
+            insights = await fb.get_page_insights(period="days_28")
+            for metric in insights.get("metrics", []):
+                name = metric.get("name", "")
+                values = metric.get("values", [{}])
+                val = values[-1].get("value", 0) if values else 0
+                if name == "page_impressions":
+                    total_impressions = val
+                elif name == "page_post_engagements":
+                    total_engagements = val
+            fb_page_info = await fb.get_page_info()
+            fb_posts = await fb.get_page_posts(limit=25)
+        except Exception as e:
+            logger.debug(f"Could not fetch FB insights: {e}")
+        
         engagement_rate = (total_engagements / max(1, total_impressions)) * 100
         
         overview = AnalyticsOverview(
@@ -124,52 +146,74 @@ async def get_analytics(
             engagement_rate=round(engagement_rate, 2)
         )
         
-        # Platform analytics
+        # Platform analytics (real data for Facebook)
         platforms = []
         for platform in SocialPlatform:
             platform_accounts = [a for a in accounts if a.platform == platform and a.status == AccountStatus.CONNECTED]
             if platform_accounts:
-                # Mock platform data
-                posts_count = random.randint(5, 50)
-                impressions = random.randint(5000, 50000)
-                engagements = random.randint(200, 3000)
-                engagement_rate = (engagements / max(1, impressions)) * 100
-                followers = random.randint(1000, 100000)
-                growth_rate = random.uniform(-5, 15)
-                
-                platforms.append(PlatformAnalytics(
-                    platform=platform.value,
-                    posts_count=posts_count,
-                    impressions=impressions,
-                    engagements=engagements,
-                    engagement_rate=round(engagement_rate, 2),
-                    followers=followers,
-                    growth_rate=round(growth_rate, 2)
+                if platform == SocialPlatform.FACEBOOK and fb_page_info:
+                    followers = fb_page_info.get("followers_count", 0)
+                    posts_count = len(fb_posts) if fb_posts else total_posts
+                    impressions = total_impressions
+                    engagements = total_engagements
+                    eng_rate = (engagements / max(1, impressions)) * 100
+                    platforms.append(PlatformAnalytics(
+                        platform=platform.value,
+                        posts_count=posts_count,
+                        impressions=impressions,
+                        engagements=engagements,
+                        engagement_rate=round(eng_rate, 2),
+                        followers=followers,
+                        growth_rate=0.0
+                    ))
+                else:
+                    platforms.append(PlatformAnalytics(
+                        platform=platform.value,
+                        posts_count=0,
+                        impressions=0,
+                        engagements=0,
+                        engagement_rate=0.0,
+                        followers=0,
+                        growth_rate=0.0
+                    ))
+        
+        # Top performing content from real FB posts
+        top_content = []
+        if fb_posts:
+            for p in fb_posts[:5]:
+                likes_data = p.get("likes", {})
+                likes = likes_data.get("summary", {}).get("total_count", 0) if isinstance(likes_data, dict) else 0
+                comments_data = p.get("comments", {})
+                comments = comments_data.get("summary", {}).get("total_count", 0) if isinstance(comments_data, dict) else 0
+                shares_data = p.get("shares", {})
+                shares = shares_data.get("count", 0) if isinstance(shares_data, dict) else 0
+                eng_total = likes + comments + shares
+                top_content.append(ContentPerformance(
+                    content_id=0,
+                    title=(p.get("message") or "Photo/Video post")[:100],
+                    platform="facebook",
+                    published_date=p.get("created_time", ""),
+                    impressions=0,
+                    likes=likes,
+                    comments=comments,
+                    shares=shares,
+                    engagement_rate=0.0
+                ))
+        else:
+            for content in contents[:5]:
+                top_content.append(ContentPerformance(
+                    content_id=content.id,
+                    title=content.title,
+                    platform="facebook",
+                    published_date=content.created_at.isoformat(),
+                    impressions=0,
+                    likes=0,
+                    comments=0,
+                    shares=0,
+                    engagement_rate=0.0
                 ))
         
-        # Top performing content (mock data)
-        top_content = []
-        for content in contents[:5]:  # Top 5 content
-            # Mock performance data
-            impressions = random.randint(1000, 20000)
-            likes = random.randint(50, 2000)
-            comments = random.randint(5, 500)
-            shares = random.randint(10, 300)
-            engagement_rate = ((likes + comments + shares) / max(1, impressions)) * 100
-            
-            top_content.append(ContentPerformance(
-                content_id=content.id,
-                title=content.title,
-                platform=random.choice(list(SocialPlatform)).value,
-                published_date=content.created_at.isoformat(),
-                impressions=impressions,
-                likes=likes,
-                comments=comments,
-                shares=shares,
-                engagement_rate=round(engagement_rate, 2)
-            ))
-        
-        # Time series data for trends
+        # Time series data for trends (zeroed until daily tracking is implemented)
         engagement_trend = []
         growth_trend = []
         
@@ -178,13 +222,13 @@ async def get_analytics(
             
             engagement_trend.append(TimeSeriesData(
                 date=date,
-                value=random.randint(100, 1000),
+                value=0,
                 metric="engagements"
             ))
             
             growth_trend.append(TimeSeriesData(
                 date=date,
-                value=random.randint(-50, 200),
+                value=0,
                 metric="followers"
             ))
         
@@ -229,15 +273,28 @@ async def get_dashboard_data(
         scheduled_count_result = await db.execute(scheduled_count_query)
         scheduled_count = scheduled_count_result.scalar() or 0
         
-        # Mock engagement data
-        total_engagement = random.randint(1000, 10000)
+        # Engagement from real FB insights
+        total_engagement = 0
+        engagement_growth = 0.0
+        try:
+            from app.services.facebook_service import FacebookService
+            from app.services.credential_resolver import get_facebook_credentials
+            creds = await get_facebook_credentials(db, user_id=current_user.id)
+            fb = FacebookService(page_id=creds.page_id, page_token=creds.page_token)
+            insights = await fb.get_page_insights(period="week")
+            for metric in insights.get("metrics", []):
+                if metric.get("name") == "page_post_engagements":
+                    values = metric.get("values", [{}])
+                    total_engagement = values[-1].get("value", 0) if values else 0
+        except Exception:
+            pass
         
         return {
             "total_content": content_count,
             "connected_accounts": accounts_count,
             "scheduled_posts": scheduled_count,
             "total_engagement": total_engagement,
-            "engagement_growth": round(random.uniform(-10, 25), 1),
+            "engagement_growth": engagement_growth,
             "last_updated": datetime.utcnow().isoformat()
         }
         
@@ -267,20 +324,45 @@ async def get_platform_analytics(
         if not account:
             raise HTTPException(status_code=404, detail=f"{platform.value} account not connected")
         
-        # Mock detailed platform analytics
+        # Real platform analytics via FB Insights
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=days)
         
         daily_stats = []
-        for i in range(days):
-            date = (start_date + timedelta(days=i)).strftime("%Y-%m-%d")
-            daily_stats.append({
-                "date": date,
-                "impressions": random.randint(500, 5000),
-                "engagements": random.randint(20, 500),
-                "followers": random.randint(1000, 10000) + i * random.randint(-10, 50),
-                "posts": random.randint(0, 3)
-            })
+        try:
+            from app.services.facebook_service import FacebookService
+            from app.services.credential_resolver import get_facebook_credentials
+            creds = await get_facebook_credentials(db, user_id=current_user.id)
+            fb = FacebookService(page_id=creds.page_id, page_token=creds.page_token)
+            page_info = await fb.get_page_info()
+            current_followers = page_info.get("followers_count", 0)
+            
+            insights = await fb.get_page_insights(
+                metrics=["page_impressions", "page_post_engagements", "page_fan_adds"],
+                period="day",
+                since=start_date.strftime("%Y-%m-%d"),
+                until=end_date.strftime("%Y-%m-%d"),
+            )
+            # Build daily map from insights
+            daily_map = {}
+            for metric in insights.get("metrics", []):
+                name = metric.get("name", "")
+                for val in metric.get("values", []):
+                    date_str = val.get("end_time", "")[:10]
+                    if date_str not in daily_map:
+                        daily_map[date_str] = {"impressions": 0, "engagements": 0, "followers": current_followers, "posts": 0}
+                    if name == "page_impressions":
+                        daily_map[date_str]["impressions"] = val.get("value", 0)
+                    elif name == "page_post_engagements":
+                        daily_map[date_str]["engagements"] = val.get("value", 0)
+            
+            for date_str in sorted(daily_map.keys()):
+                daily_stats.append({"date": date_str, **daily_map[date_str]})
+        except Exception:
+            # No FB data available
+            for i in range(days):
+                date = (start_date + timedelta(days=i)).strftime("%Y-%m-%d")
+                daily_stats.append({"date": date, "impressions": 0, "engagements": 0, "followers": 0, "posts": 0})
         
         return {
             "platform": platform.value,
@@ -324,24 +406,18 @@ async def get_content_performance(
         schedule_result = await db.execute(schedule_query)
         schedules = schedule_result.scalars().all()
         
-        # Mock performance data
+        # Performance data from schedules
         performance_data = []
         for schedule in schedules:
             if schedule.status == ScheduleStatus.COMPLETED:
-                # Mock platform-specific performance
-                impressions = random.randint(500, 20000)
-                likes = random.randint(20, 2000)
-                comments = random.randint(2, 200)
-                shares = random.randint(5, 300)
-                
                 performance_data.append({
-                    "platform": schedule.social_account.platform.value,
+                    "platform": schedule.social_account.platform.value if schedule.social_account else "facebook",
                     "published_at": schedule.posted_at.isoformat() if schedule.posted_at else None,
-                    "impressions": impressions,
-                    "likes": likes,
-                    "comments": comments,
-                    "shares": shares,
-                    "engagement_rate": round(((likes + comments + shares) / max(1, impressions)) * 100, 2)
+                    "impressions": 0,
+                    "likes": 0,
+                    "comments": 0,
+                    "shares": 0,
+                    "engagement_rate": 0.0
                 })
         
         return {
