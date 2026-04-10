@@ -15,6 +15,7 @@ from app.models.user import User
 from app.services.facebook_service import FacebookService
 from app.services.gemini_ai_service import GeminiAIService
 from app.services.credential_resolver import get_facebook_credentials
+from app.services.content_autopilot_service import sanitize_post_text
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -100,9 +101,13 @@ async def generate_post(
             topic=req.topic, style=req.tone, platform=req.platform,
         )
 
+        raw_text = result.get("emoji_enhanced") or result.get("main_text", "")
+        clean_text = sanitize_post_text(raw_text)
+        clean_main = sanitize_post_text(result.get("main_text", ""))
+
         response = {
-            "text": result.get("emoji_enhanced") or result.get("main_text", ""),
-            "main_text": result.get("main_text", ""),
+            "text": clean_text,
+            "main_text": clean_main,
             "hashtags": result.get("hashtags", []),
             "call_to_action": result.get("call_to_action", ""),
             "variations": result.get("variations", []),
@@ -127,7 +132,7 @@ async def generate_post(
 
         elif req.content_type == "video":
             headline = result.get("headline", req.topic[:60])
-            vid_prompt = f"{headline} - energetic gym / fitness promotional video for Anytime Fitness Fond du Lac"
+            vid_prompt = f"{headline} - energetic gym / fitness promotional video for Anytime Fitness Fond Du Lac"
             vid_result = await gemini.generate_extended_video(
                 prompt=vid_prompt,
                 target_duration=30,
@@ -169,29 +174,30 @@ class PublishPostRequest(BaseModel):
 @router.post("/posts/publish")
 async def publish_post(req: PublishPostRequest, fb: FacebookService = Depends(_fb)):
     """Unified publish: text, photo, or video based on content_type."""
+    clean_msg = sanitize_post_text(req.message)
     if req.content_type == "image" and req.media_path:
-        return await fb.post_photo(req.media_path, req.message)
+        return await fb.post_photo(req.media_path, clean_msg)
     elif req.content_type == "video" and req.media_path:
-        return await fb.post_video(req.media_path, req.message)
+        return await fb.post_video(req.media_path, clean_msg)
     else:
-        return await fb.post_text(req.message)
+        return await fb.post_text(clean_msg)
 
 @router.post("/posts/text")
 async def create_text_post(req: TextPostRequest, fb: FacebookService = Depends(_fb)):
-    return await fb.post_text(req.message)
+    return await fb.post_text(sanitize_post_text(req.message))
 
 @router.post("/posts/photo")
 async def create_photo_post(req: PhotoPostRequest, fb: FacebookService = Depends(_fb)):
-    return await fb.post_photo(req.image_url, req.caption)
+    return await fb.post_photo(req.image_url, sanitize_post_text(req.caption))
 
 @router.post("/posts/video")
 async def create_video_post(req: VideoPostRequest, fb: FacebookService = Depends(_fb)):
-    return await fb.post_video(req.video_url, req.description)
+    return await fb.post_video(req.video_url, sanitize_post_text(req.description))
 
 @router.post("/posts/schedule")
 async def schedule_post(req: SchedulePostRequest, fb: FacebookService = Depends(_fb)):
     return await fb.schedule_post(
-        message=req.message,
+        message=sanitize_post_text(req.message),
         scheduled_time=req.scheduled_time,
         image_url=req.image_url,
     )

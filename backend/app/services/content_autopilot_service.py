@@ -9,6 +9,7 @@ import asyncio
 import json
 import os
 import random
+import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -42,68 +43,72 @@ _CONFIG_DIR = _resolve_config_dir()
 _CONFIG_FILE = _CONFIG_DIR / "autopilot_config.json"
 
 
-# ── Default themes (sales-driven, rotate through the week) ────────────
+# ── Default themes (topic directions — NO hardcoded prices/phone/address) ──
+# All gym-specific facts (prices, phone, address, promotions, website) are
+# injected at generation time by GymContextProvider from gym_profile.json.
+# Themes describe the *topic direction* only.  The AI prompt instructs the
+# model to pull real facts from the GYM CONTEXT block and NEVER fabricate.
 DEFAULT_DAILY_THEMES: Dict[str, List[str]] = {
     "0": [
-        "$150 Gift Card Special — you GET a $150 Gift Card that covers signup, first month, 2 PT sessions, 2 body scans, and a custom meal plan. No out-of-pocket cost for all of that",
-        "New week, new chapter — spotlight on a member transformation and how our training programs got them there",
-        "Monday motivation: why Fond du Lac locals choose Anytime Fitness for 24/7 access and real personal training",
-        "Kickstart your Monday right — walk through what a first visit looks like at our gym. We make it easy to get started",
-        "Ask about our Unlimited Group Training at $175/mo — gym membership INCLUDED. Real coaching, real results, real community",
-        "Meal prep Monday: simple high-protein recipe + reminder that our custom 28-day meal plans are just $50 with an Evolt 360 body scan",
+        "Highlight our top signup promotion — break down the EXACT dollar value of each item included so prospects can see the value. Use ONLY the promotions listed in the GYM CONTEXT",
+        "New week kickoff: Walk through what a FIRST VISIT looks like — the tour, the body scan, the initial consult, the plan. Make it feel easy and welcoming so people who are nervous about joining feel comfortable",
+        "Monday motivation — share a specific, science-backed benefit of morning workouts (cortisol regulation, EPOC effect, or circadian rhythm alignment). Tie it to 24/7 key fob access",
+        "Meal prep Monday: give a specific high-protein recipe with macros (grams of protein, carbs, fat). If we offer custom meal plans, mention them using ONLY the pricing from GYM CONTEXT",
+        "Spotlight our group training program — explain what a group session looks like: the structure (warm-up, strength block, conditioning, cooldown), the coaching style, and why it works better than working out alone. Use ONLY real pricing from GYM CONTEXT",
+        "The science of consistency: explain why training 3x per week for 12 weeks beats 6x per week for 3 weeks. Reference muscle protein synthesis windows and progressive overload. CTA: our trainers build programs designed for long-term consistency",
     ],
     "1": [
-        "FREE 6-Week Group Training Challenge — zero cost, zero contract, zero risk. Just 6 weeks of real coached sessions",
-        "Training Tip Tuesday: a quick exercise form tip from our trainers, with a CTA to book a free session",
-        "Unlimited Training spotlight — gym membership INCLUDED at $175/mo group or $275/mo 1-on-1, plus nutrition coaching and body scans",
-        "Transformation Tuesday: side-by-side progress from one of our members — real person, real timeline, real program",
-        "Did you know our $50 custom 16-week program includes a full Evolt 360 body scan? Here's what that tells you about your body",
-        "What's the difference between group and 1-on-1 training? Here's a quick breakdown to help you pick the right fit",
+        "Promote our free trial or challenge program — explain what happens during the program: the assessments, the programming, the support. Use ONLY promotions from GYM CONTEXT",
+        "Training Tip Tuesday: teach ONE specific exercise with proper form cues — e.g., Romanian deadlift (hinge at hips, bar stays close, feel hamstrings stretch, squeeze glutes at top). Give 3 actionable cues",
+        "Training program spotlight — compare our group vs 1-on-1 options with membership included. Use ONLY real pricing from GYM CONTEXT. Do a cost comparison vs paying for gym + separate trainer elsewhere",
+        "Transformation spotlight: describe the JOURNEY — what kind of program, how many weeks, what changed, what was hard. Use ANONYMOUS language only (no names). Focus on the process, not just the before/after",
+        "Body composition scanning: explain what it measures (skeletal muscle mass, visceral fat, body water, segmental analysis) and why that's more useful than a bathroom scale",
+        "What's the difference between group and 1-on-1 training? Break down both: group = accountability + community + structured programming. 1-on-1 = fully customized. Help people pick the right fit",
     ],
     "2": [
-        "Mid-week value stack: break down everything in the $150 Gift Card deal to show what an insane value it is",
-        "Nutrition tip + upsell: quick healthy meal idea, then mention our $50 custom 28-day meal plan with Evolt 360 body scan",
-        "Behind the scenes at Anytime Fitness Fond du Lac — show the gym, the equipment, the vibe, invite people to visit",
-        "Hump day hustle — what does a typical group training session at our gym look like? Walk people through it",
-        "Staff spotlight: meet the person behind the front desk and what makes our gym feel like community",
-        "3 reasons our members say they chose Anytime Fitness over other Fond du Lac gyms — hear it from them",
+        "Mid-week value stack: break down every item in our top signup promotion with its individual retail value. Use ONLY the promotions from GYM CONTEXT",
+        "Nutrition deep-dive: explain ONE specific concept (e.g., protein timing, caloric surplus vs deficit, hydration and performance) with real numbers. If we offer meal plans, mention using ONLY GYM CONTEXT pricing",
+        "Behind the scenes at our gym — describe the equipment: free weight area, cable machines, cardio floor, functional training zone. Paint a picture so people can visualize training here",
+        "Walk through an actual group training session structure: 10-min warm-up, 25-min strength block, 15-min conditioning, 5-min cooldown. Show people what they're signing up for",
+        "3 reasons our members choose us over other gyms — focus on SPECIFIC differentiators: 24/7 access, personal training, body scanning, and community feel",
+        "Exercise science breakdown: explain ONE training principle (e.g., progressive overload, mind-muscle connection, time under tension, or periodization) and how our trainers apply it",
     ],
     "3": [
-        "Member success story / transformation — real results from our training programs, with testimonial style",
-        "Training program comparison: Group Unlimited vs 1-on-1 Unlimited vs Custom Program — help people pick the right fit",
-        "Throwback Thursday: before/after energy — where our members started vs where they are now",
-        "The $150 Gift Card gets you: signup fee covered, first month covered, 2 PT sessions, 2 body scans, and a custom meal plan. All free.",
-        "Trainer spotlight: what our coaches specialize in and why they love helping Fond du Lac get fit",
-        "Quick myth-buster: '24-hour gyms are just treadmill factories' — here's what REAL personal training at Anytime Fitness looks like",
+        "Anonymous member transformation — describe the starting point, the program, the timeline, and the results WITHOUT using any names. Focus on relatable obstacles they overcame",
+        "Training program comparison — break down who each training option is best for. Use ONLY real pricing and program names from GYM CONTEXT",
+        "Throwback Thursday: describe a specific type of progress — someone who couldn't do a pull-up and now does sets of 5, or someone who hated mornings and now trains at 5 AM. Keep it anonymous but relatable",
+        "Deep dive on our top signup promotion: walk through exactly what's included and what happens at each step. Use ONLY the promotion details from GYM CONTEXT",
+        "Trainer expertise spotlight: describe what our coaching staff specializes in — strength training, functional fitness, weight loss programming, nutrition coaching. No names, just expertise and results",
+        "Myth-buster: pick a specific fitness myth (e.g., 'lifting heavy makes women bulky', 'you need to do cardio to lose fat') and explain the actual science. Position our trainers as the experts",
     ],
     "4": [
-        "Weekend plans? Come check us out at 209 N Macy St — walk-ins welcome, ask about our $150 Gift Card to get started",
-        "Friday wins: celebrate what our community accomplished this week, soft pitch the FREE 6-Week Challenge",
-        "FOMO Friday: limited spots available for our FREE 6-Week Group Training Challenge — sign up before they're gone",
-        "Heading into the weekend — here are 3 quick bodyweight exercises you can do anywhere. Want a real plan? We build custom 16-week programs for $50",
-        "Payday Friday: investing in your health is the best money you'll ever spend. Our unlimited group training is $175/mo with membership included",
-        "Friday community shoutout: tag a friend who would crush our FREE 6-Week Challenge. Accountability = results",
+        "Weekend plans? Come check us out — walk-ins welcome. Describe what a walk-in experience looks like: free tour, no pressure, see the facility, ask questions. Use ONLY the address and phone from GYM CONTEXT for the CTA",
+        "Friday wins: celebrate weekly progress — explain why tracking small wins (1 more rep, 5 more lbs, better sleep) compounds into massive results. Our trainers track everything for you",
+        "FOMO Friday: promote our free trial or challenge — explain what makes it different from a typical free trial. Real coaching, real programming, real community. Use ONLY GYM CONTEXT details",
+        "Weekend workout guide: give 4-5 specific bodyweight exercises with sets/reps. Then CTA: want a REAL customized plan? Reference our custom program option using ONLY GYM CONTEXT pricing",
+        "Break down the cost of fitness vs the cost of NOT investing in your health. Use our ACTUAL training pricing from GYM CONTEXT — calculate the daily cost",
+        "Community callout: we're built for hardworking people — factory workers, nurses, teachers, parents. Our 24/7 access and flexible training schedules fit real lives and real schedules",
     ],
     "5": [
-        "Saturday sweat session: group training energy at Anytime Fitness — join the community, first 6 weeks are FREE",
-        "Weekend warrior workout tip + CTA: if you love working out on your own, our $50 custom 16-week program is built for you",
-        "Trainer spotlight: meet one of our coaches, what they specialize in, and how to book a session",
-        "Saturday vibes at the gym — 24/7 access means your schedule is YOUR schedule. No excuses, just results",
-        "Weekend project: take 30 minutes for yourself today. Here's a quick full-body circuit from our trainers",
-        "Don't let the weekend derail your progress — simple food swaps to stay on track + reminder about our $50 custom meal plans",
+        "Saturday sweat session: describe the energy of a weekend group training class — the camaraderie, the accountability, the post-workout feeling. If we have a free challenge, mention it from GYM CONTEXT",
+        "Weekend warrior tip: give a specific recovery protocol — foam rolling sequence, stretching routine, or active recovery workout with sets/reps. Explain WHY recovery matters",
+        "Coach expertise feature: describe a specific training methodology our coaches use (e.g., periodized strength training, HIIT programming, functional movement screening). Show expertise, not just enthusiasm",
+        "24/7 access deep-dive: paint specific scenarios — single parent training at 5 AM, night shift worker lifting at midnight, college student on a lunch break. Our gym fits YOUR schedule",
+        "Weekend full-body circuit: give a specific circuit workout (5 exercises, 3 rounds, specific reps) people can try this weekend. CTA: our trainers build these for you daily",
+        "Nutrition for the weekend: give specific tips for staying on track (protein targets, meal timing, hydration goals). If we offer meal plans, mention using ONLY GYM CONTEXT pricing",
     ],
     "6": [
-        "Sunday reset: plan your fitness week. Here's why having a plan matters — and we can build one for you ($50 for 16 weeks)",
-        "Recovery and self-care Sunday + mention our Evolt 360 body scanner and nutrition coaching included with Unlimited Training",
-        "New week starts tomorrow — if you've been thinking about joining, the $150 Gift Card deal makes it easy. Here's what you get",
-        "Sunday success mindset: where do you want to be 6 weeks from now? Our FREE Group Training Challenge starts that journey",
-        "Prep for Monday: set out your gym clothes, plan your meals, and book your first session. We're at 209 N Macy St — walk-ins welcome",
-        "End-of-weekend reflection + CTA: the best time to start was yesterday, the next best time is tomorrow morning. $150 Gift Card makes it free to start",
+        "Sunday reset: explain how to plan a fitness week — pick 3-4 training days, prep meals, set sleep schedule. Give actual structure, not just 'plan ahead'",
+        "Recovery science: explain a specific recovery concept (sleep and muscle protein synthesis, deload weeks, active recovery vs passive rest) with real data",
+        "New week starts tomorrow — if you've been thinking about joining, highlight our best signup deal from GYM CONTEXT. Walk through the process: walk in, sign up, start training",
+        "Sunday success mindset: explain the compound effect of small daily actions — 1%% better each day = 37x improvement in a year. Tie it to our challenge or training programs from GYM CONTEXT",
+        "Prep for Monday: give specific actionable steps — lay out gym clothes, prep 3 meals, fill water bottle, set alarm 30 min earlier. Make it tactical, not motivational fluff",
+        "End-of-weekend reflection: the best investment is in yourself. Recap our training options using ONLY the real pricing from GYM CONTEXT. Something for every budget",
     ],
 }
 
-# Post styles — weighted toward promotional and value-driven to maximize conversion
-DEFAULT_STYLES = ["promotional", "promotional", "value-driven", "community-story", "educational", "urgency"]
+# Post styles — varied to keep the feed fresh and engaging
+DEFAULT_STYLES = ["promotional", "value-driven", "educational", "authority", "curiosity-hook", "urgency"]
 
 # Default: 6 posts per day, spread across 6 posting windows (CST)
 DEFAULT_POSTS_PER_DAY = 6
@@ -123,6 +128,78 @@ DEFAULT_FORMAT_WEIGHTS = {
     "text": 0.25,
     "video": 0.0,
 }
+
+
+# ── Post-generation sanitizer ─────────────────────────────────────────
+# Catches AI-fabricated names and low-quality patterns before publishing.
+# The AI *will* invent member names despite being told not to. This is
+# the last-resort safety net — it must be aggressive, not surgical.
+
+_FAKE_NAMES = (
+    "Sarah", "Mike", "Jessica", "Brandon", "Ashley", "Chris", "Lisa",
+    "Dave", "Jen", "Amanda", "Josh", "Emily", "Matt", "Rachel", "Tyler",
+    "Nicole", "Kevin", "Megan", "Laura", "Brian", "Katie", "Dan",
+    "Stephanie", "Andrew", "Heather", "Jason", "Maria", "Ryan", "Kelly",
+    "Amy", "Steve", "Tanya", "Tony", "Brittany", "Samantha", "Derek",
+    "Tiffany", "Travis", "Lindsey", "Chad", "Missy", "Mark", "John",
+    "Jennifer", "David", "Linda", "Robert", "Michelle", "James", "Karen",
+    "Alex", "Taylor", "Jordan", "Morgan", "Jamie", "Casey", "Pat",
+    "Kim", "Cody", "Becky", "Greg", "Tom", "Jake", "Luke", "Zach",
+)
+
+# Match any fake name as a standalone word (case-sensitive, must be capitalised)
+_FAKE_NAME_RE = re.compile(
+    r'\b(?:' + '|'.join(_FAKE_NAMES) + r')(?:\'s)?\b'
+)
+
+# "Meet Sarah," / "Meet Sarah!" / "Meet Sarah." / "Meet Sarah —"
+_MEET_NAME_RE = re.compile(
+    r'\b[Mm]eet\s+(?:' + '|'.join(_FAKE_NAMES) + r')(?:\'s)?[,\.!\s—\-]',
+)
+
+_ANON_REPLACEMENTS = [
+    "One of our members",
+    "A Fond Du Lac local who trains here",
+    "A busy parent in our community",
+    "One of our regulars",
+    "A member who started right where you are",
+    "Someone from the neighborhood",
+    "A local who decided to make a change",
+]
+
+
+def sanitize_post_text(text: str) -> str:
+    """Remove fabricated member names and replace with anonymous references."""
+    if not text:
+        return text
+
+    sanitized = text
+    changed = False
+
+    # Pass 1: "Meet [Name]" → "Meet one of our members"
+    def _replace_meet(m):
+        tail_char = m.group(0)[-1]  # keep trailing punctuation
+        return "Meet " + random.choice(_ANON_REPLACEMENTS).lower() + tail_char
+    sanitized = _MEET_NAME_RE.sub(_replace_meet, sanitized)
+
+    # Pass 2: standalone name or name's → anonymous reference
+    def _replace_name(m):
+        return random.choice(_ANON_REPLACEMENTS).lower()
+    sanitized = _FAKE_NAME_RE.sub(_replace_name, sanitized)
+
+    # Pass 3: fix capitalisation after sentence boundaries
+    def _cap_after_boundary(m):
+        return m.group(0)[:-1] + m.group(0)[-1].upper()
+    sanitized = re.sub(r'(?:^|[.!?]\s+|[\n])\s*[a-z]', _cap_after_boundary, sanitized)
+
+    # Pass 4: fix double-space artifacts from replacements
+    sanitized = re.sub(r'  +', ' ', sanitized)
+
+    if sanitized != text:
+        changed = True
+        logger.warning("Sanitizer removed fabricated member name(s) from post text")
+
+    return sanitized
 
 
 def _load_config() -> Dict[str, Any]:
@@ -368,7 +445,7 @@ class ContentAutopilotService:
 
     async def _publish_queued_post(self, queued: Dict[str, Any]) -> Dict[str, Any]:
         """Publish a pre-generated post from the day queue to Facebook."""
-        full_text = queued["full_text"]
+        full_text = sanitize_post_text(queued["full_text"])
         content_format = queued.get("format", "text")
         media_path = queued.get("media_path")
 
@@ -464,23 +541,35 @@ class ContentAutopilotService:
         if hashtags:
             full_text += "\n\n" + " ".join(f"#{h.lstrip('#')}" for h in hashtags)
 
+        # Sanitize: strip fabricated names before publishing
+        full_text = sanitize_post_text(full_text)
+
         # Generate and post
         post_result: Dict[str, Any] = {}
         media_path = None
+
+        # Pull gym name + address from GymContextProvider for media prompts
+        _gym_ctx = GymContextProvider.get_context()
+        _gym_label = _gym_ctx.get("gym_name", "the gym")
+        _gym_addr = _gym_ctx.get("gym_address", "")
+        _addr_line = f"Include gym address: {_gym_addr} at the bottom. " if _gym_addr else ""
 
         if content_format == "image":
             # Extract the headline from generated text so the image matches
             headline = text_result.get("headline", "")
             img_prompt = (
-                f"Marketing graphic for Anytime Fitness Fond du Lac. "
+                f"High-end social media marketing graphic for {_gym_label}. "
                 f"Topic: {topic}. "
-                "Anytime Fitness branded — purple (#6A2C91) and white color scheme. "
-                "209 N Macy St, Fond du Lac at the bottom."
+                "Style: clean modern fitness design, bold typography, professional layout. "
+                "Brand colors: Anytime Fitness purple (#6A2C91) and white. "
+                f"{_addr_line}"
+                "NO stock photo people. Use clean geometric shapes, gradients, and bold text. "
+                "Make it look like a paid agency designed it — not a Canva template."
             )
             img_result = await self.gemini.generate_image(
                 prompt=img_prompt,
                 aspect_ratio="1:1",
-                style="professional marketing graphic",
+                style="premium fitness brand marketing graphic",
                 headline_overlay=headline or topic[:60],
             )
             if img_result.get("status") == "success":
@@ -497,7 +586,7 @@ class ContentAutopilotService:
             # Generate a short promo video with the same headline as the text
             headline = text_result.get("headline", topic[:60])
             vid_prompt = (
-                f"Short promotional ad for Anytime Fitness Fond du Lac. "
+                f"Short promotional ad for {_gym_label}. "
                 f"Main message: {headline}. "
                 f"Topic details: {topic}. "
                 "TV-commercial quality with energetic music and gym footage."
@@ -620,19 +709,31 @@ class ContentAutopilotService:
                 if hashtags:
                     full_text += "\n\n" + " ".join(f"#{h.lstrip('#')}" for h in hashtags)
 
+                # Sanitize: strip fabricated names before queuing
+                full_text = sanitize_post_text(full_text)
+
                 # Generate media if needed
                 media_path = None
+                # Pull gym name + address from GymContextProvider for media prompts
+                _gctx = GymContextProvider.get_context()
+                _glabel = _gctx.get("gym_name", "the gym")
+                _gaddr = _gctx.get("gym_address", "")
+                _gaddr_line = f"Include gym address: {_gaddr} at the bottom. " if _gaddr else ""
+
                 if content_format == "image":
                     headline = text_result.get("headline", "")
                     img_prompt = (
-                        f"Marketing graphic for Anytime Fitness Fond du Lac. "
+                        f"High-end social media marketing graphic for {_glabel}. "
                         f"Topic: {topic}. "
-                        "Anytime Fitness branded — purple (#6A2C91) and white color scheme. "
-                        "209 N Macy St, Fond du Lac at the bottom."
+                        "Style: clean modern fitness design, bold typography, professional layout. "
+                        "Brand colors: Anytime Fitness purple (#6A2C91) and white. "
+                        f"{_gaddr_line}"
+                        "NO stock photo people. Use clean geometric shapes, gradients, and bold text. "
+                        "Make it look like a paid agency designed it — not a Canva template."
                     )
                     img_result = await self.gemini.generate_image(
                         prompt=img_prompt, aspect_ratio="1:1",
-                        style="professional marketing graphic",
+                        style="premium fitness brand marketing graphic",
                         headline_overlay=headline or topic[:60],
                     )
                     if img_result.get("status") == "success":
@@ -644,7 +745,7 @@ class ContentAutopilotService:
                 elif content_format == "video":
                     headline = text_result.get("headline", topic[:60])
                     vid_prompt = (
-                        f"Short promotional ad for Anytime Fitness Fond du Lac. "
+                        f"Short promotional ad for {_glabel}. "
                         f"Main message: {headline}. Topic details: {topic}. "
                         "TV-commercial quality with energetic music and gym footage."
                     )
